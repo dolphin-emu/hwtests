@@ -13,26 +13,28 @@ template<u32 position, u32 bits, typename T=u32>
 struct BitField
 {
 private:
-	BitField(u32 val)
-	{
+	BitField(u32 val) = delete;
+/*	{
 		// This constructor just doesn't make any sense at all, so just assert out of it
-		assert(false);
-	}
+		assert(0);
+	}*/
 
-	BitField(const BitField& other)
-	{
+	// Had to allow these... very bad feeling tbh!
+//	BitField(const BitField& other) = delete;
+/*	{
 		// creates new storage => NOT what we want
-		assert(false);
-	}
+		assert(0);
+	}*/
 
-	BitField& operator = (const BitField& other)
-	{
+//	BitField& operator = (const BitField& other) = delete;
+/*	{
 		// creates new storage => NOT what we want
-		assert(false);
-	}
+		assert(0);
+	}*/
 
 public:
-	BitField() = default;
+//	BitField() {}; // TODO: Should make sure having this constructor is safe!
+	BitField() = default; // TODO: Should make sure having this constructor is safe!
 
 	BitField& operator = (u32 val)
 	{
@@ -55,8 +57,6 @@ private:
 	}
 
 	T storage;
-
-	friend class BitFieldWrapper;
 };
 
 /* Example:

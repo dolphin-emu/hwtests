@@ -372,24 +372,18 @@ struct TevStageCombiner
 
 	union TwoTevStageOrders
 	{
-		struct
-		{
-			u32 texmap0    : 3; // Indirect tex stage texmap
-			u32 texcoord0  : 3;
-			u32 enable0    : 1; // 1 if should read from texture
-			u32 colorchan0 : 3; // RAS1_CC_X
+		BitField<0,3> texmap0;      // Indirect tex stage texmap
+		BitField<3,3> texcoord0;
+		BitField<6,1> enable0;      // 1 if should read from texture
+		BitField<7,3> colorchan0;   // RAS1_CC_X
 
-			u32 pad0       : 2;
+		BitField<12,3> texmap1;
+		BitField<15,3> texcoord1;
+		BitField<18,1> enable1;     // 1 if should read from texture
+		BitField<19,3> colorchan1;  // RAS1_CC_X
 
-			u32 texmap1    : 3;
-			u32 texcoord1  : 3;
-			u32 enable1    : 1; // 1 if should read from texture
-			u32 colorchan1 : 3; // RAS1_CC_X
-
-			u32 pad1       : 2;
-			u32 rid        : 8;
-		};
 		u32 hex;
+
 		int getTexMap(int i){return i?texmap1:texmap0;}
 		int getTexCoord(int i){return i?texcoord1:texcoord0;}
 		int getEnable(int i){return i?enable1:enable0;}
