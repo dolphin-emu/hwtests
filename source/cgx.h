@@ -265,27 +265,31 @@ void CGX_DrawFullScreenQuad(int viewport_width, int viewport_height)
 	wgPipe->U8 = 0x80; // draw quads
 	wgPipe->U16 = 4; // 4 vertices
 
+	// 0x00FF0000 = green
+	// 0xFF000000 = red
+	// 0x0000FF00 = blue
+
 	// Bottom right
 	wgPipe->F32 = -1.0;
 	wgPipe->F32 = 1.0;
 	wgPipe->F32 = 1.0;
-	wgPipe->U32 = 0xFFFFFFFF;
+	wgPipe->U32 = 0x0000FF00;
 
 	// Top right
 	wgPipe->F32 = 1.0;
 	wgPipe->F32 = 1.0;
 	wgPipe->F32 = 1.0;
-	wgPipe->U32 = 0xFFFFFFFF;
+	wgPipe->U32 = 0x0000FF00;
 
 	// Top left
 	wgPipe->F32 = 1.0;
 	wgPipe->F32 = -1.0;
 	wgPipe->F32 = 1.0;
-	wgPipe->U32 = 0xFFFFFFFF;
+	wgPipe->U32 = 0x0000FF00;
 
 	// Bottom left
 	wgPipe->F32 = -1.0;
 	wgPipe->F32 = -1.0;
 	wgPipe->F32 = 1.0;
-	wgPipe->U32 = 0xFFFFFFFF;
+	wgPipe->U32 = 0x0000FF00;
 }

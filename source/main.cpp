@@ -7,7 +7,76 @@ static u32 fb = 0;
 static void *frameBuffer[2] = { NULL, NULL};
 static GXRModeObj *rmode;
 
-static u32* test_buffer;
+union EfbCopyPixelRGBA8
+{
+	u32 hex;
+};
+
+static EfbCopyPixelRGBA8* test_buffer;
+
+u8 GetTestBufferR(int s, int t, int width)
+{
+	u16 sBlk = s >> 2;
+	u16 tBlk = t >> 2;
+	u16 widthBlks = (width >> 2) + 1;
+	u32 base = (tBlk * widthBlks + sBlk) << 5;
+	u16 blkS = s & 3;
+	u16 blkT =  t & 3;
+	u32 blkOff = (blkT << 2) + blkS;
+
+	u32 offset = (base + blkOff) << 1 ;
+	const u8* valAddr = ((u8*)test_buffer) + offset;
+
+	return valAddr[1];
+}
+
+u8 GetTestBufferG(int s, int t, int width)
+{
+	u16 sBlk = s >> 2;
+	u16 tBlk = t >> 2;
+	u16 widthBlks = (width >> 2) + 1;
+	u32 base = (tBlk * widthBlks + sBlk) << 5;
+	u16 blkS = s & 3;
+	u16 blkT =  t & 3;
+	u32 blkOff = (blkT << 2) + blkS;
+
+	u32 offset = (base + blkOff) << 1 ;
+	const u8* valAddr = ((u8*)test_buffer) + offset;
+
+	return valAddr[32];
+}
+
+u8 GetTestBufferB(int s, int t, int width)
+{
+	u16 sBlk = s >> 2;
+	u16 tBlk = t >> 2;
+	u16 widthBlks = (width >> 2) + 1;
+	u32 base = (tBlk * widthBlks + sBlk) << 5;
+	u16 blkS = s & 3;
+	u16 blkT =  t & 3;
+	u32 blkOff = (blkT << 2) + blkS;
+
+	u32 offset = (base + blkOff) << 1 ;
+	const u8* valAddr = ((u8*)test_buffer) + offset;
+
+	return valAddr[33];
+}
+
+u8 GetTestBufferA(int s, int t, int width)
+{
+	u16 sBlk = s >> 2;
+	u16 tBlk = t >> 2;
+	u16 widthBlks = (width >> 2) + 1;
+	u32 base = (tBlk * widthBlks + sBlk) << 5;
+	u16 blkS = s & 3;
+	u16 blkT =  t & 3;
+	u32 blkOff = (blkT << 2) + blkS;
+
+	u32 offset = (base + blkOff) << 1 ;
+	const u8* valAddr = ((u8*)test_buffer) + offset;
+
+	return valAddr[0];
+}
 
 u32 DefaultGenMode()
 {
@@ -120,19 +189,38 @@ void TevCombinerTest()
 	wgPipe->U32 = chan.hex;
 
 	auto cc = Default<TevStageCombiner::ColorCombiner>(0);
-	cc.d = TEVCOLORARG_RASC;
+	cc.a = TEVCOLORARG_C0;
+	cc.b = TEVCOLORARG_C1;
+	cc.c = TEVCOLORARG_C2;
+	cc.d = TEVCOLORARG_ZERO;
 	CGX_LOAD_BP_REG(cc.hex);
 
-	auto ac = Default<TevStageCombiner::AlphaCombiner>(0);
-	ac.d = TEVALPHAARG_RASA;
-	CGX_LOAD_BP_REG(ac.hex);
+	CGX_LOAD_BP_REG(Default<TevStageCombiner::AlphaCombiner>(0).hex);
 
-	CGX_DrawFullScreenQuad(rmode->fbWidth, rmode->efbHeight);
-	CGX_DoEfbCopyTex(0, 0, rmode->fbWidth, rmode->efbHeight, 0x6 /*RGBA8*/, false, test_buffer);
-	CGX_WaitForGpuToFinish();
+	ColReg reg;
+	reg.hex = (BPMEM_TEV_REGISTER_L+2)<<24; // a0
+	reg.a = 0x00;
+	CGX_LOAD_BP_REG(reg.hex);
+	reg.hex = (BPMEM_TEV_REGISTER_L+4)<<24; // a1
+	reg.a = 0xff;
+	CGX_LOAD_BP_REG(reg.hex);
 
-	DO_TEST(test_buffer[100] == 0xFFEEDDCC, "Wrong pixel read.. 0x%x", test_buffer[100]);
+	for (int i = 0; i < 0x100; ++i)
+	{
+		reg.hex = (BPMEM_TEV_REGISTER_L+6)<<24; // a2
+		reg.a = i;
+		CGX_LOAD_BP_REG(reg.hex);
 
+		CGX_DrawFullScreenQuad(rmode->fbWidth, rmode->efbHeight);
+		CGX_DoEfbCopyTex(0, 0, rmode->fbWidth, rmode->efbHeight, 0x6 /*RGBA8*/, false, test_buffer);
+//		CGX_DoEfbCopyTex(0, 0, 10, 10, 0x6 /*RGBA8*/, false, test_buffer);
+		CGX_ForcePipelineFlush();
+		CGX_WaitForGpuToFinish();
+
+	//	DO_TEST(GetTestBufferA(5, 5, rmode->fbWidth) == 0x13, "Wrong pixel read.. 0x%x", test_buffer[100]);
+//		printf("%d: %x %x %x %x\n", i, GetTestBufferR(5, 5, rmode->fbWidth), GetTestBufferG(5, 5, rmode->fbWidth), GetTestBufferB(5, 5, rmode->fbWidth), GetTestBufferA(5, 5, rmode->fbWidth));
+		printf("%d: %x %x %x\n", i, GetTestBufferR(5, 5, rmode->fbWidth), 0xff * i / 255, (0xff * i) >> 8);
+	}
 	END_TEST();
 }
 
@@ -154,15 +242,24 @@ int main()
 
 	CGX_Init();
 
-	test_buffer = (u32*)memalign(32, 640*528*4);
+	test_buffer = (EfbCopyPixelRGBA8*)memalign(32, 640*528*4);
 
 	BitfieldTest();
+
+/*	PE_CONTROL ctrl;
+	ctrl.hex = BPMEM_ZCOMPARE<<24;
+	ctrl.pixel_format = PIXELFMT_RGBA6_Z24;
+	ctrl.zformat = ZC_LINEAR;
+	ctrl.early_ztest = 0;
+	CGX_LOAD_BP_REG(ctrl.hex);*/
 
 	do
 	{
 		CGX_SetViewport(0.0, 0.0, (float)rmode->fbWidth, (float)rmode->efbHeight, 0.0, 1.0);
 
-		TevCombinerTest();
+		// TODO: For some reason I get invalid results on first loop?
+		if (fb)
+			TevCombinerTest();
 
 		CGX_DoEfbCopyXfb(0, 0, rmode->fbWidth, rmode->efbHeight, &frameBuffer[fb], false, true);
 		CGX_ForcePipelineFlush();
