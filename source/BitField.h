@@ -3,6 +3,7 @@
 // Refer to the license.txt file included.
 
 #include <assert.h>
+#include "CommonTypes.h"
 
 #pragma once
 
@@ -31,6 +32,8 @@ private:
 	}
 
 public:
+	BitField() = default;
+
 	BitField& operator = (u32 val)
 	{
 		storage = (storage & ~GetMask()) | ((val<<position) & GetMask());
