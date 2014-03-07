@@ -7,8 +7,9 @@
 
 #pragma once
 
-#define START_TEST()
-#define END_TEST()
+#define START_TEST() privStartTest(__FILE__, __LINE__)
+#define DO_TEST(condition, fail_msg, ...) privDoTest(condition, __FILE__, __LINE__, fail_msg, __VA_ARGS__)
+#define END_TEST() privEndTest()
 #define SIMPLE_TEST()
 
 struct TestStatus
@@ -35,8 +36,11 @@ void privStartTest(const char* file, int line)
 	number_of_tests++;
 }
 
-void DoTest(bool condition, const char* fail_msg, ...)
+void privDoTest(bool condition, const char* file, int line, const char* fail_msg, ...)
 {
+	va_list arglist;
+	va_start(arglist, fail_msg);
+
 	++status.num_subtests;
 
 	if (condition)
@@ -47,13 +51,12 @@ void DoTest(bool condition, const char* fail_msg, ...)
 	{
 		++status.num_failures;
 
-		va_list arglist;
-		va_start(arglist, fail_msg);
-		printf("Subtest %d failed: ", status.num_subtests);
+		// TODO: vprintf forwarding doesn't seem to work?
+		printf("Subtest %d failed in %s on line %d: ", status.num_subtests, file, line);
 		vprintf(fail_msg, arglist);
 		printf("\n");
-		va_end(arglist);
 	}
+	va_end(arglist);
 }
 
 void privEndTest()
@@ -64,11 +67,11 @@ void privEndTest()
 	}
 	else
 	{
-		printf("Test %d passed (%d subtests, %d failures)\n", number_of_tests, status.num_subtests, status.num_failures);
+		printf("Test %d failed (%d subtests, %d failures)\n", number_of_tests, status.num_subtests, status.num_failures);
 	}
 }
 
-void privSimpleTest()
+void privSimpleTest(bool condition, const char* file, int line, const char* fail_msg, ...)
 {
-
+	// TODO
 }

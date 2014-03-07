@@ -163,7 +163,7 @@ void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, u8 dest_format, 
 	coords.y = height - 1;
 	CGX_LOAD_BP_REG((BPMEM_EFB_BR << 24) | coords.hex);
 
-	CGX_LOAD_BP_REG((BPMEM_EFB_ADDR<<24) | MEM_VIRTUAL_TO_PHYSICAL(dest));
+	CGX_LOAD_BP_REG((BPMEM_EFB_ADDR<<24) | (MEM_VIRTUAL_TO_PHYSICAL(dest)>>5));
 	CGX_LOAD_BP_REG((BPMEM_TRIGGER_EFB_COPY<<24) | reg.Hex);
 }
 
@@ -188,7 +188,7 @@ void CGX_DoEfbCopyXfb(u16 left, u16 top, u16 width, u16 height, void* dest, bool
 	coords.y = height - 1;
 	CGX_LOAD_BP_REG((BPMEM_EFB_BR << 24) | coords.hex);
 
-	CGX_LOAD_BP_REG((BPMEM_EFB_ADDR<<24) | MEM_VIRTUAL_TO_PHYSICAL(dest));
+	CGX_LOAD_BP_REG((BPMEM_EFB_ADDR<<24) | (MEM_VIRTUAL_TO_PHYSICAL(dest)>>5));
 
 	CGX_LOAD_BP_REG((BPMEM_MIPMAP_STRIDE<<24) | (width >> 4));
 	CGX_LOAD_BP_REG((BPMEM_TRIGGER_EFB_COPY<<24) | reg.Hex);
@@ -269,19 +269,19 @@ void CGX_DrawFullScreenQuad(int viewport_width, int viewport_height)
 	wgPipe->F32 = -1.0;
 	wgPipe->F32 = 1.0;
 	wgPipe->F32 = 1.0;
-	wgPipe->U32 = 0xFF0000FF;
+	wgPipe->U32 = 0xFFFFFFFF;
 
 	// Top right
 	wgPipe->F32 = 1.0;
 	wgPipe->F32 = 1.0;
 	wgPipe->F32 = 1.0;
-	wgPipe->U32 = 0x00FF00FF;
+	wgPipe->U32 = 0xFFFFFFFF;
 
 	// Top left
 	wgPipe->F32 = 1.0;
 	wgPipe->F32 = -1.0;
 	wgPipe->F32 = 1.0;
-	wgPipe->U32 = 0x0000FFFF;
+	wgPipe->U32 = 0xFFFFFFFF;
 
 	// Bottom left
 	wgPipe->F32 = -1.0;

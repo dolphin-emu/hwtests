@@ -21,4 +21,3 @@ union LitChannel
         return enablelighting ? (lightMask0_3 | (lightMask4_7 << 4)) : 0;
     }
 };
-

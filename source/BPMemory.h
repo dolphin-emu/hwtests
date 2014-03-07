@@ -784,17 +784,14 @@ struct TCoordInfo
 	TCInfo t;
 };
 
-
 union ColReg
 {
 	u32 hex;
-	struct
-	{
-		s32 a    : 11;
-		u32      : 1;
-		s32 b    : 11;
-		u32 type : 1;
-	};
+
+	SignedBitField< 0,11> a; // TODO: No idea if this works...
+	// 1 bit unused
+	SignedBitField<12,11> b; // TODO: No idea if this works...
+	BitField<23, 1> type;
 };
 
 struct TevReg

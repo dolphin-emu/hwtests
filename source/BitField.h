@@ -58,6 +58,36 @@ private:
 
 	T storage;
 };
+#include "stdio.h"
+template<u32 position, u32 bits, typename T=s32>
+struct SignedBitField
+{
+private:
+	SignedBitField(s32 val) = delete;
+
+public:
+	SignedBitField() = default;
+
+	SignedBitField& operator = (s32 val)
+	{
+		storage = (storage & ~GetMask()) | ((val<<position) & GetMask());
+		return *this;
+	}
+
+	operator s32() const
+	{
+		u32 shift = 8 * sizeof(T) - bits;
+		return (s32)((storage & GetMask()) << (shift - position)) >> shift;
+	}
+
+private:
+	constexpr u32 GetMask()
+	{
+		return ((bits == 32) ? 0xFFFFFFFF : ((1 << bits)-1)) << position;
+	}
+
+	T storage;
+};
 
 /* Example:
  */
@@ -66,5 +96,6 @@ union SomeClass
 	u32 hex;
 	BitField<0,7> first_seven_bits;
 	BitField<7,8> next_eight_bits;
+	SignedBitField<3,15> some_signed_fields;
 	// ...
 };
