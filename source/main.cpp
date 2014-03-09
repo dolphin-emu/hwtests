@@ -23,7 +23,7 @@ union EfbCopyPixelRGBA8
 int client_socket;
 int server_socket;
 
-
+#define TEST_BUFFER_SIZE (640*528*4)
 static EfbCopyPixelRGBA8* test_buffer;
 
 u8 GetTestBufferR(int s, int t, int width)
@@ -198,7 +198,25 @@ void BitfieldTest()
 
 	END_TEST();
 }
-#include <unistd.h>
+
+int TevCombinerExpectation(int a, int b, int c, int d, int shift, int bias, int op, int clamp)
+{
+	// TODO: Does not handle compare mode, yet
+	c = c+(c>>7);
+	u16 lshift = (shift == 1) ? 1 : (shift == 2) ? 2 : 0;
+	u16 rshift = (shift == 3) ? 1 : 0;
+	int round_bias = (shift==3) ? 0 /*: (cc.op==1) ? -128*/ : 128; // TODO: No idea if cc.op plays any role here.. results are still different anyway
+	int expected = (((a*(256-c) + b*c) << lshift)+round_bias)>>8; // lerp
+	expected = (d << lshift) + expected * ((op == 1) ? (-1) : 1);
+	expected += ((bias == 2) ? -128 : (bias == 1) ? 128 : 0) << lshift;
+	expected >>= rshift;
+	if (clamp)
+		expected = (expected < 0) ? 0 : (expected > 255) ? 255 : expected;
+	else
+		expected = (expected < -1024) ? -1024 : (expected > 1023) ? 1023 : expected;
+	return expected;
+}
+
 void TevCombinerTest()
 {
 	START_TEST();
@@ -235,95 +253,92 @@ void TevCombinerTest()
 	CGX_LOAD_BP_REG(tevreg.low);
 	CGX_LOAD_BP_REG(tevreg.high);
 
-	// First, test linear interpolation algorithm
-	// Then test the order of lerp and scaling
-	int step = 0;
-	for (int i = 0; i < 0x1 || step < 3; ++i)
+#if 0
+	// Test if we can extract all bits of the tev combiner output...
+	tevreg = Default<TevReg>(1, false); // c0
+	for (tevreg.red = -1024; tevreg.red != 1023; tevreg.red = tevreg.red+1)
 	{
-		break;
-		if (i == 0x100)
-		{
-			network_printf("step %d finished\n", step);
-			step++;
-			i = 0;
-
-			if (step == 1)
-			{
-				// Enable scaling
-				cc.shift = GX_CS_SCALE_4;
-				CGX_LOAD_BP_REG(cc.hex);
-			}
-			else if (step == 2)
-			{
-				// Enable scaling, but only use the "d" input
-				cc.a = TEVCOLORARG_ZERO;
-				cc.b = TEVCOLORARG_ZERO;
-				cc.c = TEVCOLORARG_ZERO;
-				cc.d = TEVCOLORARG_C2;
-//				cc.shift = GX_CS_SCALE_4;
-				CGX_LOAD_BP_REG(cc.hex);
-			}
-			else if (step == 3)
-			{
-				// Enable scaling and lerp, a=c0, b=c2, c=c1, d=0
-				cc.a = TEVCOLORARG_C0;
-				cc.b = TEVCOLORARG_C2;
-				cc.c = TEVCOLORARG_C1;
-				cc.d = TEVCOLORARG_ZERO;
-//				cc.shift = GX_CS_SCALE_4;
-				CGX_LOAD_BP_REG(cc.hex);
-			}
-		}
-
-		tevreg = Default<TevReg>(3, false); // c2
-		tevreg.red = i;
 		CGX_LOAD_BP_REG(tevreg.low);
 		CGX_LOAD_BP_REG(tevreg.high);
 
+		auto genmode = Default<GenMode>();
+		genmode.numtevstages = 0; // One stage
+		CGX_LOAD_BP_REG(genmode.hex);
+
+		cc = Default<TevStageCombiner::ColorCombiner>(0);
+		cc.d = TEVCOLORARG_C0;
+		CGX_LOAD_BP_REG(cc.hex);
+
+		memset(test_buffer, 0, TEST_BUFFER_SIZE);
 		CGX_DrawFullScreenQuad(rmode->fbWidth, rmode->efbHeight);
 		CGX_DoEfbCopyTex(0, 0, 100, 100, 0x6 /*RGBA8*/, false, test_buffer);
 		CGX_ForcePipelineFlush();
 		CGX_WaitForGpuToFinish();
 
-		// Debug display code
-		CGX_DoEfbCopyXfb(0, 0, rmode->fbWidth, rmode->efbHeight, xfbHeight, frameBuffer[fb], true);
-		VIDEO_SetNextFramebuffer(frameBuffer[fb]);
-		VIDEO_Flush();
-		VIDEO_WaitVSync();
-		fb ^= 1;
+		u16 result1 = GetTestBufferR(5, 5, 100);
+		DO_TEST(result1 == (tevreg.red&0xFF), "Source test value %d: Got %d", tevreg.red&0xFF, result1);
 
-/*		if (step == 0)
-			DO_TEST(GetTestBufferR(5, 5, 100) == 0xff * i / 255, "Wrong pixel read.. 0x%x", GetTestBufferR(5, 5, 100));
-		if (step == 2)
-			DO_TEST(GetTestBufferR(5, 5, 100) == ((i * 4) & 0xFF), "Wrong pixel read.. 0x%x", GetTestBufferR(5, 5, 100));
-		if (step == 3)
-			DO_TEST(GetTestBufferR(5, 5, 100) == ((i * 4) & 0xFF), "Wrong pixel read.. 0x%x", GetTestBufferR(5, 5, 100));*/
+		// Good so far, now let's try to read the upper bits
+		genmode.numtevstages = 3; // Four stages
+		CGX_LOAD_BP_REG(genmode.hex);
 
-		network_printf("%d %d %d %d %d\n", i,
-		               GetTestBufferR(5, 5, 100),  // hardware behavior
-		               (0xff * i * ((step==1 || step==2 || step==3)?4:1) / 255),             // TFN behavior
-		               ((0xff * (i + (i>>7))) >> 8) * ((step==1 || step==2 || step==3)?4:1), // software renderer behavior
-		               (((0xff * i) >> 8)) * ((step==1 || step==2 || step==3)?4:1)             // suggested behavior
-		              );
+		// The following tev stages are exclusively used to rightshift the
+		// upper bits such that they get written to the render target.
+		auto cc1 = Default<TevStageCombiner::ColorCombiner>(1);
+		cc1.d = TEVCOLORARG_CPREV;
+		cc1.shift = TEVDIVIDE_2;
+		CGX_LOAD_BP_REG(cc1.hex);
 
-		WPAD_ScanPads();
+		auto cc2 = Default<TevStageCombiner::ColorCombiner>(2);
+		cc2.d = TEVCOLORARG_CPREV;
+		cc2.shift = TEVDIVIDE_2;
+		CGX_LOAD_BP_REG(cc2.hex);
 
-		if (WPAD_ButtonsDown(0) & WPAD_BUTTON_HOME)
-			break;
+		auto cc3 = Default<TevStageCombiner::ColorCombiner>(3);
+		cc3.d = TEVCOLORARG_CPREV;
+		cc3.shift = TEVDIVIDE_2;
+		CGX_LOAD_BP_REG(cc3.hex);
+
+		memset(test_buffer, 0, TEST_BUFFER_SIZE);
+		CGX_DrawFullScreenQuad(rmode->fbWidth, rmode->efbHeight);
+		CGX_DoEfbCopyTex(0, 0, 100, 100, 0x6 /*RGBA8*/, false, test_buffer);
+		CGX_ForcePipelineFlush();
+		CGX_WaitForGpuToFinish();
+
+		u16 result2 = GetTestBufferR(5, 5, 100) >> 5;
+		DO_TEST(result2 == (((tevreg.red >> 3)&0xFF)>>5), "Source test value %d: Got %d", (((tevreg.red >> 3)&0xFF)>>5), result2);
+
+		s16 result = result1 + ((result2 & 0x4) ? (-0x400+((result2&0x3)<<8)) : (result2<<8));
+		DO_TEST(result == tevreg.red, "Source test value %d: Got %d", tevreg.red, result);
 	}
+#endif
 
-	// OK, whatever.. just test everything
-	cc.a = TEVCOLORARG_C0;
-	cc.b = TEVCOLORARG_C1;
-	cc.c = TEVCOLORARG_C2;
-	cc.d = TEVCOLORARG_ZERO;
-	cc.shift = GX_CS_SCALE_4;
-	CGX_LOAD_BP_REG(cc.hex);
-	for (int i = 0; i < 0x1000000; ++i)
+	// Now: Randomized testing of tev combiners.
+	for (int i = 0x000000; i < 0x010000; ++i)
 	{
-		int a = i >> 16;
-		int b = (i>>8)&0xFF;
-		int c = i&0xFF;
+		if ((i & 0xFF00) == i)
+			network_printf("progress: %x\n", i);
+
+		auto genmode = Default<GenMode>();
+		genmode.numtevstages = 0; // One stage
+		CGX_LOAD_BP_REG(genmode.hex);
+
+		// FIRST TEV STAGE: Randomly configured, output in PREV.
+		cc = Default<TevStageCombiner::ColorCombiner>(0);
+		cc.a = TEVCOLORARG_C0;
+		cc.b = TEVCOLORARG_C1;
+		cc.c = TEVCOLORARG_C2;
+		cc.d = TEVCOLORARG_ZERO;// TEVCOLORARG_CPREV; // NOTE: TEVCOLORARG_CPREV doesn't actually seem to fetch its data from PREV when used in the first stage?
+		cc.shift = rand() % 4;
+		cc.bias = rand() % 3;
+		cc.op = 0; //rand()%2;
+		cc.clamp = rand() % 2;
+		CGX_LOAD_BP_REG(cc.hex);
+
+		int a = rand() % 255;
+		int b = rand() % 255;
+		int c = rand() % 255;
+		int d = 0; //-1024 + (rand() % 2048);
 		tevreg = Default<TevReg>(1, false); // c0
 		tevreg.red = a;
 		CGX_LOAD_BP_REG(tevreg.low);
@@ -336,31 +351,61 @@ void TevCombinerTest()
 		tevreg.red = c;
 		CGX_LOAD_BP_REG(tevreg.low);
 		CGX_LOAD_BP_REG(tevreg.high);
+		tevreg = Default<TevReg>(0, false); // prev
+		tevreg.red = d;
+		CGX_LOAD_BP_REG(tevreg.low);
+		CGX_LOAD_BP_REG(tevreg.high);
 
 		CGX_DrawFullScreenQuad(rmode->fbWidth, rmode->efbHeight);
 		CGX_DoEfbCopyTex(0, 0, 100, 100, 0x6 /*RGBA8*/, false, test_buffer);
 		CGX_ForcePipelineFlush();
 		CGX_WaitForGpuToFinish();
 
-		// Debug display code
-/*		CGX_DoEfbCopyXfb(0, 0, rmode->fbWidth, rmode->efbHeight, xfbHeight, frameBuffer[fb], true);
-		VIDEO_SetNextFramebuffer(frameBuffer[fb]);
-		VIDEO_Flush();
-		VIDEO_WaitVSync();
-		fb ^= 1;*/
+		// Bits 0..7 of the final result
+		u16 result1 = GetTestBufferR(5, 5, 100);
 
-		network_printf(" %02x %02x %02x: %02x %02x\n", a, b, c,
-		               GetTestBufferR(5, 5, 100),  // hardware behavior
-		               ((a*(255-c) + b*c) / 255) * 4             // TFN behavior
-		              );
+		// NEXT TEV STAGES: Shift the previous result 3 bits to the right
+		// This is necessary to read off the upper bits,
+		// which got masked off when writing the the EFB in the first stage
+		genmode.numtevstages = 3; // Four stages
+		CGX_LOAD_BP_REG(genmode.hex);
+
+		// The following tev stages are exclusively used to rightshift the
+		// upper bits such that they get written to the render target.
+		auto cc1 = Default<TevStageCombiner::ColorCombiner>(1);
+		cc1.d = TEVCOLORARG_CPREV;
+		cc1.shift = TEVDIVIDE_2;
+		CGX_LOAD_BP_REG(cc1.hex);
+
+		auto cc2 = Default<TevStageCombiner::ColorCombiner>(2);
+		cc2.d = TEVCOLORARG_CPREV;
+		cc2.shift = TEVDIVIDE_2;
+		CGX_LOAD_BP_REG(cc2.hex);
+
+		auto cc3 = Default<TevStageCombiner::ColorCombiner>(3);
+		cc3.d = TEVCOLORARG_CPREV;
+		cc3.shift = TEVDIVIDE_2;
+		CGX_LOAD_BP_REG(cc3.hex);
+
+		memset(test_buffer, 0, TEST_BUFFER_SIZE);
+		CGX_DrawFullScreenQuad(rmode->fbWidth, rmode->efbHeight);
+		CGX_DoEfbCopyTex(0, 0, 100, 100, 0x6 /*RGBA8*/, false, test_buffer);
+		CGX_ForcePipelineFlush();
+		CGX_WaitForGpuToFinish();
+
+		u16 result2 = GetTestBufferR(5, 5, 100) >> 5;
+		
+		// uh.. let's just say this works, but I guess it could be simplified.
+		s16 result = result1 + ((result2 & 0x4) ? (-0x400+((result2&0x3)<<8)) : (result2<<8));
+
+		int expected = TevCombinerExpectation(a, b, c, d, cc.shift, cc.bias, cc.op, cc.clamp);
+		DO_TEST(result == expected, "Mismatch on a=%d, b=%d, c=%d, d=%d, shift=%d, bias=%d, op=%d, clamp=%d: expected %d, got %d", a, b, c, d, (u32)cc.shift, (u32)cc.bias, (u32)cc.op, (u32)cc.clamp, expected, result);
 
 		WPAD_ScanPads();
 
 		if (WPAD_ButtonsDown(0) & WPAD_BUTTON_HOME)
 			break;
 	}
-	exit(0);
-
 	END_TEST();
 }
 
@@ -464,83 +509,12 @@ int main()
 
 	GX_End();
 
+	// Testing begins here!
+	TevCombinerTest();
 
-	do
-	{
-		WPAD_ScanPads();
-
-		network_printf("frame...\n");
-
-//		CGX_SetViewport(0.0, 0.0, (float)rmode->fbWidth, (float)rmode->efbHeight, 0.0, 1.0);
-
-		GX_SetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
-		GX_SetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
-
-		TevCombinerTest();
-
-//		CGX_DoEfbCopyXfb(0, 0, rmode->fbWidth, rmode->efbHeight, &frameBuffer[fb], false, true);
-//		CGX_ForcePipelineFlush();
-/*		CGX_LOAD_BP_REG(DefaultGenMode());
-		CGX_LOAD_BP_REG(Default<TwoTevStageOrders>(0).hex);
-
-		CGX_BEGIN_LOAD_XF_REGS(0x1009, 1);
-		wgPipe->U32 = 1; // 1 color channel
-
-		LitChannel chan;
-		chan.hex = 0;
-		chan.matsource = 1; // from vertex
-		CGX_BEGIN_LOAD_XF_REGS(0x100e, 1); // color channel 1
-		wgPipe->U32 = chan.hex;
-		CGX_BEGIN_LOAD_XF_REGS(0x1010, 1); // alpha channel 1
-		wgPipe->U32 = chan.hex;
-
-		auto cc = Default<TevStageCombiner::ColorCombiner>(0);
-		cc.a = TEVCOLORARG_C0;
-		cc.b = TEVCOLORARG_C1;
-		cc.c = TEVCOLORARG_C2;
-		cc.d = TEVCOLORARG_ZERO;
-		CGX_LOAD_BP_REG(cc.hex);
-
-		CGX_LOAD_BP_REG(Default<TevStageCombiner::AlphaCombiner>(0).hex);
-
-		ColReg reg;
-		reg.hex = (BPMEM_TEV_REGISTER_L+2)<<24; // a0
-		reg.a = 0x00;
-		CGX_LOAD_BP_REG(reg.hex);
-		reg.hex = (BPMEM_TEV_REGISTER_L+4)<<24; // a1
-		reg.a = 0xff;
-		CGX_LOAD_BP_REG(reg.hex);
-
-		reg.hex = (BPMEM_TEV_REGISTER_L+6)<<24; // a2
-		reg.a = 0x80;
-		CGX_LOAD_BP_REG(reg.hex);*/
-//		GX_SetNumChans(1); // damnit dirty state...
-//		GX_SetNumTexGens(0);
-//		GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-//		GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);*/
-
-/*		CGX_DrawFullScreenQuad(rmode->fbWidth, rmode->efbHeight);
-		CGX_ForcePipelineFlush();*/
-
-		GX_DrawDone();
-		GX_CopyDisp(frameBuffer[fb], true);
-
-		VIDEO_SetNextFramebuffer(frameBuffer[fb]);
-
-		VIDEO_Flush();
-		VIDEO_WaitVSync();
-		fb ^= 1; // flip framebuffer
-
-
-		if (WPAD_ButtonsDown(0) & WPAD_BUTTON_A)
-			goto stop;
-	} while(true);
-
-stop:
-
+	// Shut down...
 	network_printf("Shutting down...\n");
 	network_shutdown();
 
-	exit(0);
 	return 0;
 }
