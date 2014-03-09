@@ -217,11 +217,65 @@ int TevCombinerExpectation(int a, int b, int c, int d, int shift, int bias, int 
 	return expected;
 }
 
+int GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorCombiner& last_cc)
+{
+	int previous_stage = ((last_cc.hex >> 24)-BPMEM_TEV_COLOR_ENV)>>1;
+	assert(previous_stage < 13);
+
+	// FIRST RENDER PASS:
+	// As set up by the caller, used to retrieve lower 8 bits of the TEV output
+
+//	memset(test_buffer, 0, TEST_BUFFER_SIZE); // Just for debugging
+	CGX_DrawFullScreenQuad(rmode->fbWidth, rmode->efbHeight);
+	CGX_DoEfbCopyTex(0, 0, 100, 100, 0x6 /*RGBA8*/, false, test_buffer);
+	CGX_ForcePipelineFlush();
+	CGX_WaitForGpuToFinish();
+	u16 result1 = GetTestBufferR(5, 5, 100);
+
+	// SECOND RENDER PASS
+	// Uses three additional TEV stages which shift the previous result
+	// three bits to the right. This is necessary to read off the upper bits,
+	// which got masked off when writing to the EFB in the first pass.
+	auto gm = genmode;
+	gm.numtevstages = previous_stage + 3; // three additional stages
+	CGX_LOAD_BP_REG(gm.hex);
+
+	// The following tev stages are exclusively used to rightshift the
+	// upper bits such that they get written to the render target.
+
+	auto cc1 = Default<TevStageCombiner::ColorCombiner>(previous_stage+1);
+	cc1.d = last_cc.dest * 2;
+	cc1.shift = TEVDIVIDE_2;
+	CGX_LOAD_BP_REG(cc1.hex);
+
+	cc1 = Default<TevStageCombiner::ColorCombiner>(previous_stage+2);
+	cc1.d = last_cc.dest * 2;
+	cc1.shift = TEVDIVIDE_2;
+	CGX_LOAD_BP_REG(cc1.hex);
+
+	cc1 = Default<TevStageCombiner::ColorCombiner>(previous_stage+3);
+	cc1.d = last_cc.dest * 2;
+	cc1.shift = TEVDIVIDE_2;
+	CGX_LOAD_BP_REG(cc1.hex);
+
+	memset(test_buffer, 0, TEST_BUFFER_SIZE);
+	CGX_DrawFullScreenQuad(rmode->fbWidth, rmode->efbHeight);
+	CGX_DoEfbCopyTex(0, 0, 100, 100, 0x6 /*RGBA8*/, false, test_buffer);
+	CGX_ForcePipelineFlush();
+	CGX_WaitForGpuToFinish();
+
+	u16 result2 = GetTestBufferR(5, 5, 100) >> 5;
+
+	// uh.. let's just say this works, but I guess it could be simplified.
+	s16 result = result1 + ((result2 & 0x4) ? (-0x400+((result2&0x3)<<8)) : (result2<<8));
+
+	return result;
+}
+
 void TevCombinerTest()
 {
 	START_TEST();
 
-	CGX_LOAD_BP_REG(Default<GenMode>().hex);
 	CGX_LOAD_BP_REG(Default<TwoTevStageOrders>(0).hex);
 
 	CGX_BEGIN_LOAD_XF_REGS(0x1009, 1);
@@ -235,27 +289,11 @@ void TevCombinerTest()
 	CGX_BEGIN_LOAD_XF_REGS(0x1010, 1); // alpha channel 1
 	wgPipe->U32 = chan.hex;
 
-	auto cc = Default<TevStageCombiner::ColorCombiner>(0);
-	cc.a = TEVCOLORARG_C0;
-	cc.b = TEVCOLORARG_C1;
-	cc.c = TEVCOLORARG_C2;
-	cc.d = TEVCOLORARG_ZERO;
-	CGX_LOAD_BP_REG(cc.hex);
-
 	CGX_LOAD_BP_REG(Default<TevStageCombiner::AlphaCombiner>(0).hex);
 
-	auto tevreg = Default<TevReg>(1, false); // c0
-	tevreg.red = 3;
-	CGX_LOAD_BP_REG(tevreg.low);
-	CGX_LOAD_BP_REG(tevreg.high);
-	tevreg = Default<TevReg>(2, false); // c1
-	tevreg.red = 0xf7;
-	CGX_LOAD_BP_REG(tevreg.low);
-	CGX_LOAD_BP_REG(tevreg.high);
-
-#if 0
+#if 1
 	// Test if we can extract all bits of the tev combiner output...
-	tevreg = Default<TevReg>(1, false); // c0
+	auto tevreg = Default<TevReg>(1, false); // c0
 	for (tevreg.red = -1024; tevreg.red != 1023; tevreg.red = tevreg.red+1)
 	{
 		CGX_LOAD_BP_REG(tevreg.low);
@@ -265,50 +303,12 @@ void TevCombinerTest()
 		genmode.numtevstages = 0; // One stage
 		CGX_LOAD_BP_REG(genmode.hex);
 
-		cc = Default<TevStageCombiner::ColorCombiner>(0);
+		auto cc = Default<TevStageCombiner::ColorCombiner>(0);
 		cc.d = TEVCOLORARG_C0;
 		CGX_LOAD_BP_REG(cc.hex);
 
-		memset(test_buffer, 0, TEST_BUFFER_SIZE);
-		CGX_DrawFullScreenQuad(rmode->fbWidth, rmode->efbHeight);
-		CGX_DoEfbCopyTex(0, 0, 100, 100, 0x6 /*RGBA8*/, false, test_buffer);
-		CGX_ForcePipelineFlush();
-		CGX_WaitForGpuToFinish();
+		int result = GetTevOutput(genmode, cc);
 
-		u16 result1 = GetTestBufferR(5, 5, 100);
-		DO_TEST(result1 == (tevreg.red&0xFF), "Source test value %d: Got %d", tevreg.red&0xFF, result1);
-
-		// Good so far, now let's try to read the upper bits
-		genmode.numtevstages = 3; // Four stages
-		CGX_LOAD_BP_REG(genmode.hex);
-
-		// The following tev stages are exclusively used to rightshift the
-		// upper bits such that they get written to the render target.
-		auto cc1 = Default<TevStageCombiner::ColorCombiner>(1);
-		cc1.d = TEVCOLORARG_CPREV;
-		cc1.shift = TEVDIVIDE_2;
-		CGX_LOAD_BP_REG(cc1.hex);
-
-		auto cc2 = Default<TevStageCombiner::ColorCombiner>(2);
-		cc2.d = TEVCOLORARG_CPREV;
-		cc2.shift = TEVDIVIDE_2;
-		CGX_LOAD_BP_REG(cc2.hex);
-
-		auto cc3 = Default<TevStageCombiner::ColorCombiner>(3);
-		cc3.d = TEVCOLORARG_CPREV;
-		cc3.shift = TEVDIVIDE_2;
-		CGX_LOAD_BP_REG(cc3.hex);
-
-		memset(test_buffer, 0, TEST_BUFFER_SIZE);
-		CGX_DrawFullScreenQuad(rmode->fbWidth, rmode->efbHeight);
-		CGX_DoEfbCopyTex(0, 0, 100, 100, 0x6 /*RGBA8*/, false, test_buffer);
-		CGX_ForcePipelineFlush();
-		CGX_WaitForGpuToFinish();
-
-		u16 result2 = GetTestBufferR(5, 5, 100) >> 5;
-		DO_TEST(result2 == (((tevreg.red >> 3)&0xFF)>>5), "Source test value %d: Got %d", (((tevreg.red >> 3)&0xFF)>>5), result2);
-
-		s16 result = result1 + ((result2 & 0x4) ? (-0x400+((result2&0x3)<<8)) : (result2<<8));
 		DO_TEST(result == tevreg.red, "Source test value %d: Got %d", tevreg.red, result);
 	}
 #endif
@@ -323,8 +323,8 @@ void TevCombinerTest()
 		genmode.numtevstages = 0; // One stage
 		CGX_LOAD_BP_REG(genmode.hex);
 
-		// FIRST TEV STAGE: Randomly configured, output in PREV.
-		cc = Default<TevStageCombiner::ColorCombiner>(0);
+		// Randomly configured TEV stage, output in PREV.
+		auto cc = Default<TevStageCombiner::ColorCombiner>(0);
 		cc.a = TEVCOLORARG_C0;
 		cc.b = TEVCOLORARG_C1;
 		cc.c = TEVCOLORARG_C2;
@@ -356,47 +356,7 @@ void TevCombinerTest()
 		CGX_LOAD_BP_REG(tevreg.low);
 		CGX_LOAD_BP_REG(tevreg.high);
 
-		CGX_DrawFullScreenQuad(rmode->fbWidth, rmode->efbHeight);
-		CGX_DoEfbCopyTex(0, 0, 100, 100, 0x6 /*RGBA8*/, false, test_buffer);
-		CGX_ForcePipelineFlush();
-		CGX_WaitForGpuToFinish();
-
-		// Bits 0..7 of the final result
-		u16 result1 = GetTestBufferR(5, 5, 100);
-
-		// NEXT TEV STAGES: Shift the previous result 3 bits to the right
-		// This is necessary to read off the upper bits,
-		// which got masked off when writing the the EFB in the first stage
-		genmode.numtevstages = 3; // Four stages
-		CGX_LOAD_BP_REG(genmode.hex);
-
-		// The following tev stages are exclusively used to rightshift the
-		// upper bits such that they get written to the render target.
-		auto cc1 = Default<TevStageCombiner::ColorCombiner>(1);
-		cc1.d = TEVCOLORARG_CPREV;
-		cc1.shift = TEVDIVIDE_2;
-		CGX_LOAD_BP_REG(cc1.hex);
-
-		auto cc2 = Default<TevStageCombiner::ColorCombiner>(2);
-		cc2.d = TEVCOLORARG_CPREV;
-		cc2.shift = TEVDIVIDE_2;
-		CGX_LOAD_BP_REG(cc2.hex);
-
-		auto cc3 = Default<TevStageCombiner::ColorCombiner>(3);
-		cc3.d = TEVCOLORARG_CPREV;
-		cc3.shift = TEVDIVIDE_2;
-		CGX_LOAD_BP_REG(cc3.hex);
-
-		memset(test_buffer, 0, TEST_BUFFER_SIZE);
-		CGX_DrawFullScreenQuad(rmode->fbWidth, rmode->efbHeight);
-		CGX_DoEfbCopyTex(0, 0, 100, 100, 0x6 /*RGBA8*/, false, test_buffer);
-		CGX_ForcePipelineFlush();
-		CGX_WaitForGpuToFinish();
-
-		u16 result2 = GetTestBufferR(5, 5, 100) >> 5;
-		
-		// uh.. let's just say this works, but I guess it could be simplified.
-		s16 result = result1 + ((result2 & 0x4) ? (-0x400+((result2&0x3)<<8)) : (result2<<8));
+		int result = GetTevOutput(genmode, cc);
 
 		int expected = TevCombinerExpectation(a, b, c, d, cc.shift, cc.bias, cc.op, cc.clamp);
 		DO_TEST(result == expected, "Mismatch on a=%d, b=%d, c=%d, d=%d, shift=%d, bias=%d, op=%d, clamp=%d: expected %d, got %d", a, b, c, d, (u32)cc.shift, (u32)cc.bias, (u32)cc.op, (u32)cc.clamp, expected, result);
