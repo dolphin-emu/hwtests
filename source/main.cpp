@@ -217,7 +217,20 @@ int TevCombinerExpectation(int a, int b, int c, int d, int shift, int bias, int 
 	return expected;
 }
 
-int GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorCombiner& last_cc)
+union int4
+{
+	struct
+	{
+		int r, g, b, a;
+	};
+	struct
+	{
+		int x, y, z, w;
+	};
+};
+
+// TODO: Make this behave flexible with regards to the current EFB format!
+int4 GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorCombiner& last_cc)
 {
 	int previous_stage = ((last_cc.hex >> 24)-BPMEM_TEV_COLOR_ENV)>>1;
 	assert(previous_stage < 13);
@@ -230,7 +243,9 @@ int GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorCombiner& 
 	CGX_DoEfbCopyTex(0, 0, 100, 100, 0x6 /*RGBA8*/, false, test_buffer);
 	CGX_ForcePipelineFlush();
 	CGX_WaitForGpuToFinish();
-	u16 result1 = GetTestBufferR(5, 5, 100);
+	u16 result1r = GetTestBufferR(5, 5, 100);
+	u16 result1g = GetTestBufferG(5, 5, 100);
+	u16 result1b = GetTestBufferB(5, 5, 100);
 
 	// SECOND RENDER PASS
 	// Uses three additional TEV stages which shift the previous result
@@ -264,10 +279,16 @@ int GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorCombiner& 
 	CGX_ForcePipelineFlush();
 	CGX_WaitForGpuToFinish();
 
-	u16 result2 = GetTestBufferR(5, 5, 100) >> 5;
+	u16 result2r = GetTestBufferR(5, 5, 100) >> 5;
+	u16 result2g = GetTestBufferG(5, 5, 100) >> 5;
+	u16 result2b = GetTestBufferB(5, 5, 100) >> 5;
 
 	// uh.. let's just say this works, but I guess it could be simplified.
-	s16 result = result1 + ((result2 & 0x4) ? (-0x400+((result2&0x3)<<8)) : (result2<<8));
+	int4 result;
+	result.r = result1r + ((result2r & 0x4) ? (-0x400+((result2r&0x3)<<8)) : (result2r<<8));
+	result.g = result1g + ((result2g & 0x4) ? (-0x400+((result2g&0x3)<<8)) : (result2g<<8));
+	result.b = result1b + ((result2b & 0x4) ? (-0x400+((result2b&0x3)<<8)) : (result2b<<8));
+	// TODO: alpha bits!
 
 	return result;
 }
@@ -307,7 +328,7 @@ void TevCombinerTest()
 		cc.d = TEVCOLORARG_C0;
 		CGX_LOAD_BP_REG(cc.hex);
 
-		int result = GetTevOutput(genmode, cc);
+		int result = GetTevOutput(genmode, cc).r;
 
 		DO_TEST(result == tevreg.red, "Source test value %d: Got %d", tevreg.red, result);
 	}
@@ -356,7 +377,7 @@ void TevCombinerTest()
 		CGX_LOAD_BP_REG(tevreg.low);
 		CGX_LOAD_BP_REG(tevreg.high);
 
-		int result = GetTevOutput(genmode, cc);
+		int result = GetTevOutput(genmode, cc).r;
 
 		int expected = TevCombinerExpectation(a, b, c, d, cc.shift, cc.bias, cc.op, cc.clamp);
 		DO_TEST(result == expected, "Mismatch on a=%d, b=%d, c=%d, d=%d, shift=%d, bias=%d, op=%d, clamp=%d: expected %d, got %d", a, b, c, d, (u32)cc.shift, (u32)cc.bias, (u32)cc.op, (u32)cc.clamp, expected, result);
