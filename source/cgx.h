@@ -15,6 +15,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <ogc/system.h>
+#include <ogc/gx.h>
 
 #include "CommonTypes.h"
 #include "BPMemory.h"
@@ -76,13 +77,14 @@ void CGX_Init()
 
 void CGX_SetViewport(float origin_x, float origin_y, float width, float height, float near, f32 far)
 {
-	CGX_BEGIN_LOAD_XF_REGS(0x101a,6);
+/*	CGX_BEGIN_LOAD_XF_REGS(0x101a,6);
 	wgPipe->F32 = width*0.5;
 	wgPipe->F32 = -height*0.5;
 	wgPipe->F32 = (far-near)*16777215.0;
 	wgPipe->F32 = 342.0+origin_x+width*0.5;
 	wgPipe->F32 = 342.0+origin_y+height*0.5;
-	wgPipe->F32 = far*16777215.0;	
+	wgPipe->F32 = far*16777215.0;*/
+	GX_SetViewport(origin_x, origin_y, width, height, near, far);
 }
 
 static inline void WriteMtxPS4x2(register f32 mt[3][4], register void* wgpipe)
@@ -108,34 +110,37 @@ static inline void WriteMtxPS4x2(register f32 mt[3][4], register void* wgpipe)
 void CGX_LoadPosMatrixDirect(f32 mt[3][4], u32 index)
 {
 	// Untested
-	CGX_BEGIN_LOAD_XF_REGS((index<<2)&0xFF, 12);
-	WriteMtxPS4x2(mt, (void*)wgPipe);
+/*	CGX_BEGIN_LOAD_XF_REGS((index<<2)&0xFF, 12);
+	WriteMtxPS4x2(mt, (void*)wgPipe);*/
+	GX_LoadPosMtxImm(mt, index);
 }
 
 void CGX_LoadProjectionMatrixPerspective(float mtx[4][4])
 {
 	// Untested
-	CGX_BEGIN_LOAD_XF_REGS(0x1020, 7);
+/*	CGX_BEGIN_LOAD_XF_REGS(0x1020, 7);
 	wgPipe->F32 = mtx[0][0];
 	wgPipe->F32 = mtx[0][2];
 	wgPipe->F32 = mtx[1][1];
 	wgPipe->F32 = mtx[1][2];
 	wgPipe->F32 = mtx[2][2];
 	wgPipe->F32 = mtx[2][3];
-	wgPipe->U32 = 0;
+	wgPipe->U32 = 0;*/
+	GX_LoadProjectionMtx(mtx, 0);
 }
 
 void CGX_LoadProjectionMatrixOrthographic(float mtx[4][4])
 {
 	// Untested
-	CGX_BEGIN_LOAD_XF_REGS(0x1020, 7);
+/*	CGX_BEGIN_LOAD_XF_REGS(0x1020, 7);
 	wgPipe->F32 = mtx[0][0];
 	wgPipe->F32 = mtx[0][3];
 	wgPipe->F32 = mtx[1][1];
 	wgPipe->F32 = mtx[1][3];
 	wgPipe->F32 = mtx[2][2];
 	wgPipe->F32 = mtx[2][3];
-	wgPipe->U32 = 1;
+	wgPipe->U32 = 1;*/
+	GX_LoadProjectionMtx(mtx, 1);
 }
 
 void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, u8 dest_format, bool copy_to_intensity, void* dest, bool scale_down=false, bool clear=false) // TODO: Clear color
@@ -147,35 +152,44 @@ void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, u8 dest_format, 
 
 	// TODO: GX_TF_Z16 seems to have special treatment in libogc? oO
 
+	X10Y10 coords;
+	coords.hex = BPMEM_EFB_TL << 24;
+	coords.x = left;
+	coords.y = top;
+	CGX_LOAD_BP_REG(coords.hex);
+
+	coords.hex = BPMEM_EFB_BR << 24;
+	coords.x = width - 1;
+	coords.y = height - 1;
+	CGX_LOAD_BP_REG(coords.hex);
+
+	// TODO: this one is hardcoded against dest_format=RGBA8...
+	CGX_LOAD_BP_REG((BPMEM_MIPMAP_STRIDE << 24) | (((width+3)>>2) * 2));
+
+	CGX_LOAD_BP_REG((BPMEM_EFB_ADDR<<24) | (MEM_VIRTUAL_TO_PHYSICAL(dest)>>5));
+
 	UPE_Copy reg;
-	reg.Hex = 0;
+	reg.Hex = BPMEM_TRIGGER_EFB_COPY<<24;
 	reg.target_pixel_format = ((dest_format << 1) & 0xE) | (dest_format >> 3);
 	reg.half_scale = scale_down;
 	reg.clear = clear;
 	reg.intensity_fmt = copy_to_intensity;
+	CGX_LOAD_BP_REG(reg.Hex);
 
-	X10Y10 coords;
-	coords.hex = 0;
-	coords.x = left;
-	coords.y = top;
-	CGX_LOAD_BP_REG((BPMEM_EFB_TL << 24) | coords.hex);
-	coords.x = width - 1;
-	coords.y = height - 1;
-	CGX_LOAD_BP_REG((BPMEM_EFB_BR << 24) | coords.hex);
-
-	CGX_LOAD_BP_REG((BPMEM_EFB_ADDR<<24) | (MEM_VIRTUAL_TO_PHYSICAL(dest)>>5));
-	CGX_LOAD_BP_REG((BPMEM_TRIGGER_EFB_COPY<<24) | reg.Hex);
+	// Really, no idea if it needs the PixModeSync call... DCFlushRange seems necessary though.
+	GX_PixModeSync();
+    DCFlushRange(dest, GX_GetTexBufferSize(width,height,GX_TF_RGBA8,GX_FALSE,1));
 }
 
-void CGX_DoEfbCopyXfb(u16 left, u16 top, u16 width, u16 height, void* dest, bool scale_down=false, bool clear=false) // TODO: Other parameters...
+void CGX_DoEfbCopyXfb(u16 left, u16 top, u16 width, u16 src_height, u16 dst_height, void* dest, bool clear=false) // TODO: Other parameters...
 {
 	assert(left <= 1023);
 	assert(top <= 1023);
 	assert(width <= 1023);
-	assert(height <= 1023);
+	assert(src_height <= 1023);
 
-	UPE_Copy reg;
-	reg.Hex = 0;
+/*	UPE_Copy reg;
+	reg.Hex = BPMEM_TRIGGER_EFB_COPY<<24;
 	reg.clear = clear;
 	reg.copy_to_xfb = 1;
 
@@ -191,7 +205,12 @@ void CGX_DoEfbCopyXfb(u16 left, u16 top, u16 width, u16 height, void* dest, bool
 	CGX_LOAD_BP_REG((BPMEM_EFB_ADDR<<24) | (MEM_VIRTUAL_TO_PHYSICAL(dest)>>5));
 
 	CGX_LOAD_BP_REG((BPMEM_MIPMAP_STRIDE<<24) | (width >> 4));
-	CGX_LOAD_BP_REG((BPMEM_TRIGGER_EFB_COPY<<24) | reg.Hex);
+	CGX_LOAD_BP_REG(reg.Hex);*/
+
+	GX_SetDispCopySrc(left, top, width, src_height);
+	GX_SetDispCopyDst(width, dst_height);
+	// SetCopyFilter, SetFieldMode, SetDispCopyGamma
+	GX_CopyDisp(dest, clear);
 }
 
 void CGX_ForcePipelineFlush()

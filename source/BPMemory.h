@@ -6,6 +6,7 @@
 
 #include "CommonTypes.h"
 #include "BitField.h"
+#include </home/tony/dolphin-emu/Externals/LZO/lzoconf.h>
 
 #pragma pack(4)
 
@@ -553,13 +554,13 @@ struct FourTexUnits
 
 union GenMode
 {
-	BitField<0,4> numtexgens;
-	BitField<4,5> numcolchans;
-	BitField<9,1> multisampling;
-	BitField<10,4> numtevstages;
-	BitField<14,2> cullmode;
-	BitField<16,3> numindstages;
-	BitField<19,5> zfreeze;
+	BitField<0,4> numtexgens; // SetNumTexGens
+	BitField<4,5> numcolchans; // TODO: This should actually be just 2 or 3 bits wide...
+	BitField<9,1> multisampling; // SetPixelFmt (case pix_fmt == GX_PF_RGB565_Z16)
+	BitField<10,4> numtevstages; // SetNumTevStages
+	BitField<14,2> cullmode;  //SetCullMode
+	BitField<16,3> numindstages; // SetNumIndStages
+	BitField<19,5> zfreeze; // SetCoPlanar, TODO: Should only be one bit...
 
 	u32 hex;
 };
@@ -788,16 +789,29 @@ union ColReg
 {
 	u32 hex;
 
-	SignedBitField< 0,11> a; // TODO: No idea if this works...
+	SignedBitField< 0,11,s32> a;
 	// 1 bit unused
-	SignedBitField<12,11> b; // TODO: No idea if this works...
-	BitField<23, 1> type;
+	SignedBitField<12,11,s32> b;
+	BitField<23, 1,u32> type;
 };
 
-struct TevReg
+union TevReg
 {
-	ColReg low;
-	ColReg high;
+	// TODO: Not sure if this works!
+	SignedBitField< 0,11,s64> red;
+	// 1 bit unused
+	SignedBitField<12,11,s64> alpha;
+	BitField<23, 1,u64> type_ra;
+
+	SignedBitField<32,11,s64> blue;
+	// 1 bit unused
+	SignedBitField<44,11,s64> green;
+	BitField<55, 1,u64> type_bg;
+
+	u64 hex;
+
+	BitField< 0, 32, u64, u32> low;
+	BitField<32, 32, u64, u32> high;
 };
 
 union TevKSel

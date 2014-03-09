@@ -9,11 +9,11 @@
 
 // NOTE: Only works for sizeof(T)<=4 bytes
 // NOTE: Only(?) works for unsigned fields?
-template<u32 position, u32 bits, typename T=u32>
+template<u32 position, u32 bits, typename T=u32, typename ExposeType=T>
 struct BitField
 {
 private:
-	BitField(u32 val) = delete;
+	BitField(ExposeType val) = delete;
 /*	{
 		// This constructor just doesn't make any sense at all, so just assert out of it
 		assert(0);
@@ -36,30 +36,60 @@ public:
 //	BitField() {}; // TODO: Should make sure having this constructor is safe!
 	BitField() = default; // TODO: Should make sure having this constructor is safe!
 
-	BitField& operator = (u32 val)
+	BitField& operator = (ExposeType val)
 	{
-		storage = (storage & ~GetMask()) | ((val<<position) & GetMask());
+		storage = (storage & ~GetMask()) | (((T)val<<position) & GetMask());
 		return *this;
 	}
 
-	operator u32() const { return (storage & GetMask()) >> position; }
+	operator ExposeType() const { return (storage & GetMask()) >> position; }
 
-	static T MaxVal()
+	static ExposeType MaxVal()
 	{
 		// TODO
 		return (1<<bits)-1;
 	}
 
 private:
-	constexpr u32 GetMask()
+	constexpr T GetMask()
 	{
-		return ((bits == 32) ? 0xFFFFFFFF : ((1 << bits)-1)) << position;
+		return (bits == 8*sizeof(T)) ? (~(T)0) :
+		       (((T)1 << bits)-(T)1) << position;
 	}
 
 	T storage;
 };
-#include "stdio.h"
-template<u32 position, u32 bits, typename T=s32>
+
+template<u32 position, u32 bits, typename T=s64, typename ExposeType=T>
+struct SignedBitField
+{
+private:
+	SignedBitField(ExposeType val) = delete;
+
+public:
+	SignedBitField() = default;
+
+	SignedBitField& operator = (ExposeType val)
+	{
+		storage = (storage & ~GetMask()) | ((val<<position) & GetMask());
+		return *this;
+	}
+
+	operator ExposeType() const
+	{
+		u64 shift = 8 * sizeof(T) - bits;
+		return (ExposeType)((storage & GetMask()) << (shift - position)) >> shift;
+	}
+private:
+	constexpr u64 GetMask()
+	{
+		return (bits == 64) ? 0xFFFFFFFFFFFFFFFF :
+		       ((1ull << bits)-1ull) << position;
+	}
+
+	T storage;
+};
+/*template<u32 position, u32 bits, typename T=s32>
 struct SignedBitField
 {
 private:
@@ -80,7 +110,7 @@ public:
 		return (s32)((storage & GetMask()) << (shift - position)) >> shift;
 	}
 
-private:
+//private:
 	constexpr u32 GetMask()
 	{
 		return ((bits == 32) ? 0xFFFFFFFF : ((1 << bits)-1)) << position;
@@ -88,7 +118,7 @@ private:
 
 	T storage;
 };
-
+*/
 /* Example:
  */
 union SomeClass
