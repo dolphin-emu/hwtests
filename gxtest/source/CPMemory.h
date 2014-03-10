@@ -151,71 +151,71 @@ union TVtxDesc
 	u8 byte[8];
 
 
-	BitField<0,1> PosMatIdx;
-	BitField<1,1> Tex0MatIdx;
-	BitField<2,1> Tex1MatIdx;
-	BitField<3,1> Tex2MatIdx;
-	BitField<4,1> Tex3MatIdx;
-	BitField<5,1> Tex4MatIdx;
-	BitField<6,1> Tex5MatIdx;
-	BitField<7,1> Tex6MatIdx;
-	BitField<8,1> Tex7MatIdx;
-	BitField<9,2> Position;
-	BitField<11,2> Normal;
-	BitField<13,2> Color0;
-	BitField<15,2> Color1;
-	BitField<17,2> Tex0Coord;
-	BitField<19,2> Tex1Coord;
-	BitField<21,2> Tex2Coord;
-	BitField<23,2> Tex3Coord;
-	BitField<25,2> Tex4Coord;
-	BitField<27,2> Tex5Coord;
-	BitField<29,2> Tex6Coord;
+	BitField<0,1,u64> PosMatIdx;
+	BitField<1,1,u64> Tex0MatIdx;
+	BitField<2,1,u64> Tex1MatIdx;
+	BitField<3,1,u64> Tex2MatIdx;
+	BitField<4,1,u64> Tex3MatIdx;
+	BitField<5,1,u64> Tex4MatIdx;
+	BitField<6,1,u64> Tex5MatIdx;
+	BitField<7,1,u64> Tex6MatIdx;
+	BitField<8,1,u64> Tex7MatIdx;
+	BitField<9,2,u64> Position;
+	BitField<11,2,u64> Normal;
+	BitField<13,2,u64> Color0;
+	BitField<15,2,u64> Color1;
+	BitField<17,2,u64> Tex0Coord;
+	BitField<19,2,u64> Tex1Coord;
+	BitField<21,2,u64> Tex2Coord;
+	BitField<23,2,u64> Tex3Coord;
+	BitField<25,2,u64> Tex4Coord;
+	BitField<27,2,u64> Tex5Coord;
+	BitField<29,2,u64> Tex6Coord;
 	BitField<31,2,u64> Tex7Coord;
 	// 31 unused bits follow
 };
 
 union UVAT_group0
 {
-	BitField<0,1> PosElements;
-	BitField<1,3> PosFormat;
-	BitField<4,5> PosFrac;
+	BitField<0,1,u32> PosElements;
+	BitField<1,3,u32> PosFormat;
+	BitField<4,5,u32> PosFrac;
 
-	BitField<9,1> NormalElements;
-	BitField<10,3> NormalFormat;
+	BitField<9,1,u32> NormalElements;
+	BitField<10,3,u32> NormalFormat;
 
-	BitField<13,1> Color0Elements;
-	BitField<14,3> Color0Comp;
+	BitField<13,1,u32> Color0Elements;
+	BitField<14,3,u32> Color0Comp;
 
-	BitField<17,1> Color1Elements;
-	BitField<18,3> Color1Comp;
+	BitField<17,1,u32> Color1Elements;
+	BitField<18,3,u32> Color1Comp;
 
-	BitField<21,1> Tex0CoordElements;
-	BitField<22,3> Tex0CoordFormat;
-	BitField<25,5> Tex0Frac;
+	BitField<21,1,u32> Tex0CoordElements;
+	BitField<22,3,u32> Tex0CoordFormat;
+	BitField<25,5,u32> Tex0Frac;
 
-	BitField<30,1> ByteDequant;
-	BitField<31,1> NormalIndex3;
+	BitField<30,1,u32> ByteDequant;
+	BitField<31,1,u32> NormalIndex3;
 
 	u32 Hex;
 };
 
 union UVAT_group1
 {
-	BitField<0,1> Tex1CoordElements;
-	BitField<1,3> Tex1CoordFormat;
-	BitField<4,5> Tex1Frac;
+	BitField<0,1,u32> Tex1CoordElements;
+	BitField<1,3,u32> Tex1CoordFormat;
+	BitField<4,5,u32> Tex1Frac;
 
-	BitField<9,1> Tex2CoordElements;
-	BitField<10,3> Tex2CoordFormat;
-	BitField<13,5> Tex2Frac;
+	BitField<9,1,u32> Tex2CoordElements;
+	BitField<10,3,u32> Tex2CoordFormat;
+	BitField<13,5,u32> Tex2Frac;
 
-	BitField<18,1> Tex3CoordElements;
-	BitField<19,3> Tex3CoordFormat;
-	BitField<22,5> Tex3Frac;
+	BitField<18,1,u32> Tex3CoordElements;
+	BitField<19,3,u32> Tex3CoordFormat;
+	BitField<22,5,u32> Tex3Frac;
 
-	BitField<27,1> Tex4CoordElements;
-	BitField<28,3> Tex4CoordFormat;
+	BitField<27,1,u32> Tex4CoordElements;
+	BitField<28,3,u32> Tex4CoordFormat;
 	// 1 bit unused
 
 	u32 Hex;
@@ -223,19 +223,19 @@ union UVAT_group1
 
 union UVAT_group2
 {
-	BitField<0,5> Tex4Frac;
+	BitField<0,5,u32> Tex4Frac;
 
-	BitField<5,1> Tex5CoordElements;
-	BitField<6,3> Tex5CoordFormat;
-	BitField<9,5> Tex5Frac;
+	BitField<5,1,u32> Tex5CoordElements;
+	BitField<6,3,u32> Tex5CoordFormat;
+	BitField<9,5,u32> Tex5Frac;
 
-	BitField<14,1> Tex6CoordElements;
-	BitField<15,3> Tex6CoordFormat;
-	BitField<18,5> Tex6Frac;
+	BitField<14,1,u32> Tex6CoordElements;
+	BitField<15,3,u32> Tex6CoordFormat;
+	BitField<18,5,u32> Tex6Frac;
 
-	BitField<23,1> Tex7CoordElements;
-	BitField<24,3> Tex7CoordFormat;
-	BitField<27,5> Tex7Frac;
+	BitField<23,1,u32> Tex7CoordElements;
+	BitField<24,3,u32> Tex7CoordFormat;
+	BitField<27,5,u32> Tex7Frac;
 
 	u32 Hex;
 };
@@ -269,11 +269,11 @@ struct TVtxAttr
 // Matrix indices
 union TMatrixIndexA
 {
-	BitField<0,6> PosNormalMtxIdx;
-	BitField<6,6> Tex0MtxIdx;
-	BitField<12,6> Tex1MtxIdx;
-	BitField<18,6> Tex2MtxIdx;
-	BitField<24,6> Tex3MtxIdx;
+	BitField<0,6,u32> PosNormalMtxIdx;
+	BitField<6,6,u32> Tex0MtxIdx;
+	BitField<12,6,u32> Tex1MtxIdx;
+	BitField<18,6,u32> Tex2MtxIdx;
+	BitField<24,6,u32> Tex3MtxIdx;
 
 	struct
 	{
@@ -284,10 +284,10 @@ union TMatrixIndexA
 
 union TMatrixIndexB
 {
-	BitField<0,6> Tex4MtxIdx;
-	BitField<6,6> Tex5MtxIdx;
-	BitField<12,6> Tex6MtxIdx;
-	BitField<18,6> Tex7MtxIdx;
+	BitField<0,6,u32> Tex4MtxIdx;
+	BitField<6,6,u32> Tex5MtxIdx;
+	BitField<12,6,u32> Tex6MtxIdx;
+	BitField<18,6,u32> Tex7MtxIdx;
 	struct
 	{
 		u32 Hex : 24;

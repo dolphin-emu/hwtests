@@ -271,36 +271,36 @@ struct TevStageCombiner
 {
 	union ColorCombiner
 	{
-		BitField<0,4> d;
-		BitField<4,4> c;
-		BitField<8,4> b;
-		BitField<12,4> a;
+		BitField<0,4,u32> d;
+		BitField<4,4,u32> c;
+		BitField<8,4,u32> b;
+		BitField<12,4,u32> a;
 
-		BitField<16,2> bias;
-		BitField<18,1> op;
-		BitField<19,1> clamp;
+		BitField<16,2,u32> bias;
+		BitField<18,1,u32> op;
+		BitField<19,1,u32> clamp;
 
-		BitField<20,2> shift;
-		BitField<22,2> dest;
+		BitField<20,2,u32> shift;
+		BitField<22,2,u32> dest;
 
 		u32 hex;
 	};
 	union AlphaCombiner
 	{
-		BitField<0,2> rswap;
-		BitField<2,2> tswap;
+		BitField<0,2,u32> rswap;
+		BitField<2,2,u32> tswap;
 
-		BitField<4,3> d;
-		BitField<7,3> c;
-		BitField<10,3> b;
-		BitField<13,3> a;
+		BitField<4,3,u32> d;
+		BitField<7,3,u32> c;
+		BitField<10,3,u32> b;
+		BitField<13,3,u32> a;
 
-		BitField<16,2> bias;
-		BitField<18,1> op;
-		BitField<19,1> clamp;
+		BitField<16,2,u32> bias;
+		BitField<18,1,u32> op;
+		BitField<19,1,u32> clamp;
 
-		BitField<20,2> shift;
-		BitField<22,2> dest;
+		BitField<20,2,u32> shift;
+		BitField<22,2,u32> dest;
 
 		u32 hex;
 	};
@@ -373,15 +373,15 @@ struct TevStageCombiner
 
 	union TwoTevStageOrders
 	{
-		BitField<0,3> texmap0;      // Indirect tex stage texmap
-		BitField<3,3> texcoord0;
-		BitField<6,1> enable0;      // 1 if should read from texture
-		BitField<7,3> colorchan0;   // RAS1_CC_X
+		BitField<0,3,u32> texmap0;      // Indirect tex stage texmap
+		BitField<3,3,u32> texcoord0;
+		BitField<6,1,u32> enable0;      // 1 if should read from texture
+		BitField<7,3,u32> colorchan0;   // RAS1_CC_X
 
-		BitField<12,3> texmap1;
-		BitField<15,3> texcoord1;
-		BitField<18,1> enable1;     // 1 if should read from texture
-		BitField<19,3> colorchan1;  // RAS1_CC_X
+		BitField<12,3,u32> texmap1;
+		BitField<15,3,u32> texcoord1;
+		BitField<18,1,u32> enable1;     // 1 if should read from texture
+		BitField<19,3,u32> colorchan1;  // RAS1_CC_X
 
 		u32 hex;
 
@@ -554,13 +554,13 @@ struct FourTexUnits
 
 union GenMode
 {
-	BitField<0,4> numtexgens; // SetNumTexGens
-	BitField<4,5> numcolchans; // TODO: This should actually be just 2 or 3 bits wide...
-	BitField<9,1> multisampling; // SetPixelFmt (case pix_fmt == GX_PF_RGB565_Z16)
-	BitField<10,4> numtevstages; // SetNumTevStages
-	BitField<14,2> cullmode;  //SetCullMode
-	BitField<16,3> numindstages; // SetNumIndStages
-	BitField<19,5> zfreeze; // SetCoPlanar, TODO: Should only be one bit...
+	BitField<0,4,u32> numtexgens; // SetNumTexGens
+	BitField<4,5,u32> numcolchans; // TODO: This should actually be just 2 or 3 bits wide...
+	BitField<9,1,u32> multisampling; // SetPixelFmt (case pix_fmt == GX_PF_RGB565_Z16)
+	BitField<10,4,u32> numtevstages; // SetNumTevStages
+	BitField<14,2,u32> cullmode;  //SetCullMode
+	BitField<16,3,u32> numindstages; // SetNumIndStages
+	BitField<19,5,u32> zfreeze; // SetCoPlanar, TODO: Should only be one bit...
 
 	u32 hex;
 };
@@ -582,14 +582,14 @@ union LPSize
 
 union X12Y12
 {
-	BitField<0,12> y;
-	BitField<12,12> x;
+	BitField<0,12,u32> y;
+	BitField<12,12,u32> x;
 	u32 hex;
 };
 union X10Y10
 {
-	BitField<0,10> x;
-	BitField<10,10> y;
+	BitField<0,10,u32> x;
+	BitField<10,10,u32> y;
 	u32 hex;
 };
 
@@ -609,24 +609,24 @@ union X10Y10
 
 union BlendMode
 {
-	BitField<0,1> blendenable;
-	BitField<1,1> logicopenable;
-	BitField<2,1> dither;
-	BitField<3,1> colorupdate;
-	BitField<4,1> alphaupdate;
-	BitField<5,3> dstfactor; // GX_BL_ONE, GX_BL_INVSRCCLR, etc
-	BitField<8,3> srcfactor;
-	BitField<11,1> subtract;
-	BitField<12,4> logicmode;
+	BitField<0,1,u32> blendenable;
+	BitField<1,1,u32> logicopenable;
+	BitField<2,1,u32> dither;
+	BitField<3,1,u32> colorupdate;
+	BitField<4,1,u32> alphaupdate;
+	BitField<5,3,u32> dstfactor; // GX_BL_ONE, GX_BL_INVSRCCLR, etc
+	BitField<8,3,u32> srcfactor;
+	BitField<11,1,u32> subtract;
+	BitField<12,4,u32> logicmode;
 	u32 hex;
 };
 
 
 union FogParam0
 {
-	BitField<0,11> mantissa;
-	BitField<11,8> exponent;
-	BitField<19,1> sign;
+	BitField<0,11,u32> mantissa;
+	BitField<11,8,u32> exponent;
+	BitField<19,1,u32> sign;
 
 	float GetA()
 	{
@@ -640,11 +640,11 @@ union FogParam0
 
 union FogParam3
 {
-	BitField<0,11> c_mant;
-	BitField<11,8> c_exp;
-	BitField<19,1> c_sign;
-	BitField<20,1> proj; // 0 - perspective, 1 - orthographic
-	BitField<21,3> fsel; // 0 - off, 2 - linear, 4 - exp, 5 - exp2, 6 - backward exp, 7 - backward exp2
+	BitField<0,11,u32> c_mant;
+	BitField<11,8,u32> c_exp;
+	BitField<19,1,u32> c_sign;
+	BitField<20,1,u32> proj; // 0 - perspective, 1 - orthographic
+	BitField<21,3,u32> fsel; // 0 - off, 2 - linear, 4 - exp, 5 - exp2, 6 - backward exp, 7 - backward exp2
 
 	// amount to subtract from eyespacez after range adjustment
 	float GetC()
@@ -659,8 +659,8 @@ union FogParam3
 
 union FogRangeKElement
 {
-	BitField<0,12> HI;
-	BitField<12,12> LO;
+	BitField<0,12,u32> HI;
+	BitField<12,12,u32> LO;
 
 	// TODO: Which scaling coefficient should we use here? This is just a guess!
 	float GetValue(int i) { return (i ? HI : LO) / 256.f; }
@@ -671,8 +671,8 @@ struct FogRangeParams
 {
 	union RangeBase
 	{
-		BitField<0,10> Center;
-		BitField<10,1> Enabled;
+		BitField<0,10,u32> Center;
+		BitField<10,1,u32> Enabled;
 		u32 hex;
 	};
 	RangeBase Base;
@@ -688,9 +688,9 @@ struct FogParams
 
 	union FogColor
 	{
-		BitField<0,8> b;
-		BitField<8,8> g;
-		BitField<16,8> r;
+		BitField<0,8,u32> b;
+		BitField<8,8,u32> g;
+		BitField<16,8,u32> r;
 		u32 hex;
 	};
 
@@ -699,9 +699,9 @@ struct FogParams
 
 union ZMode
 {
-	BitField<0,1> testenable;
-	BitField<1,3> func;
-	BitField<4,1> updateenable;
+	BitField<0,1,u32> testenable;
+	BitField<1,3,u32> func;
+	BitField<4,1,u32> updateenable;
 	u32 hex;
 };
 
@@ -756,9 +756,9 @@ union FieldMask
 
 union PE_CONTROL
 {
-	BitField<0,3> pixel_format; // PIXELFMT_X
-	BitField<3,3> zformat; // Z compression for 16 bit Z format
-	BitField<6,1> early_ztest; // 1: before tex stage
+	BitField<0,3,u32> pixel_format; // PIXELFMT_X
+	BitField<3,3,u32> zformat; // Z compression for 16 bit Z format
+	BitField<6,1,u32> early_ztest; // 1: before tex stage
 
 	u32 hex;
 };
@@ -789,29 +789,28 @@ union ColReg
 {
 	u32 hex;
 
-	SignedBitField< 0,11,s32> a;
+	BitField< 0,11,s32> a;
 	// 1 bit unused
-	SignedBitField<12,11,s32> b;
+	BitField<12,11,s32> b;
 	BitField<23, 1,u32> type;
 };
 
 union TevReg
 {
-	// TODO: Not sure if this works!
-	SignedBitField< 0,11,s64> red;
+	BitField< 0,11,s64> red;
 	// 1 bit unused
-	SignedBitField<12,11,s64> alpha;
+	BitField<12,11,s64> alpha;
 	BitField<23, 1,u64> type_ra;
 
-	SignedBitField<32,11,s64> blue;
+	BitField<32,11,s64> blue;
 	// 1 bit unused
-	SignedBitField<44,11,s64> green;
+	BitField<44,11,s64> green;
 	BitField<55, 1,u64> type_bg;
 
 	u64 hex;
 
-	BitField< 0, 32, u64> low;
-	BitField<32, 32, u64> high;
+	BitField< 0, 32,u64> low;
+	BitField<32, 32,u64> high;
 };
 
 union TevKSel
@@ -832,11 +831,11 @@ union TevKSel
 
 union AlphaTest
 {
-	BitField<0,8> ref0;
-	BitField<8,8> ref1;
-	BitField<16,3> comp0;
-	BitField<19,3> comp1;
-	BitField<22,2> logic;
+	BitField<0,8,u32> ref0;
+	BitField<8,8,u32> ref1;
+	BitField<16,3,u32> comp0;
+	BitField<19,3,u32> comp1;
+	BitField<22,2,u32> logic;
 	u32 hex;
 
 	enum TEST_RESULT
@@ -885,18 +884,18 @@ union AlphaTest
 union UPE_Copy
 {
 	u32 Hex;
-	BitField<0,1> clamp0;
-	BitField<1,1> clamp1;
-	BitField<2,1> yuv;
-	BitField<3,4> target_pixel_format;
-	BitField<7,2> gamma;
-	BitField<9,1> half_scale;
-	BitField<10,1> scale_invert;
-	BitField<11,1> clear;
-	BitField<12,2> frame_to_field;
-	BitField<14,1> copy_to_xfb;
-	BitField<15,1> intensity_fmt;
-	BitField<16,1> auto_conv;
+	BitField<0,1,u32> clamp0;
+	BitField<1,1,u32> clamp1;
+	BitField<2,1,u32> yuv;
+	BitField<3,4,u32> target_pixel_format;
+	BitField<7,2,u32> gamma;
+	BitField<9,1,u32> half_scale;
+	BitField<10,1,u32> scale_invert;
+	BitField<11,1,u32> clear;
+	BitField<12,2,u32> frame_to_field;
+	BitField<14,1,u32> copy_to_xfb;
+	BitField<15,1,u32> intensity_fmt;
+	BitField<16,1,u32> auto_conv;
 
 	u32 tp_realFormat()
 	{
