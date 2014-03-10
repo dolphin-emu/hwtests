@@ -6,7 +6,6 @@
 
 #include "CommonTypes.h"
 #include "BitField.h"
-#include </home/tony/dolphin-emu/Externals/LZO/lzoconf.h>
 
 #pragma pack(4)
 

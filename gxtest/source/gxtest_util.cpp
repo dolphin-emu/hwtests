@@ -1,0 +1,301 @@
+// Copyright 2013 Dolphin Emulator Project
+// Licensed under GPLv2
+// Refer to the license.txt file included.
+
+#include <string.h>
+#include <malloc.h>
+#include <gccore.h>
+#include <ogc/video.h>
+
+#include "cgx.h"
+#include "cgx_defaults.h"
+#include "gxtest_util.h"
+
+//#define ENABLE_DEBUG_DISPLAY
+#include "Test.h" // TODO
+namespace GXTest
+{
+#define TEST_BUFFER_SIZE (640*528*4)
+static u32* test_buffer;
+
+#ifdef ENABLE_DEBUG_DISPLAY
+static u32 fb = 0;
+static void *frameBuffer[2] = { NULL, NULL};
+static GXRModeObj *rmode;
+
+float yscale;
+u32 xfbHeight;
+#endif
+
+
+void Init()
+{
+	GXColor background = {0, 0x27, 0, 0xff};
+
+#if defined(ENABLE_DEBUG_DISPLAY)
+	VIDEO_Init();
+
+	rmode = VIDEO_GetPreferredMode(NULL);
+
+	frameBuffer[0] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
+	frameBuffer[1] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
+
+	VIDEO_Configure(rmode);
+	VIDEO_SetNextFramebuffer(frameBuffer[fb]);
+	VIDEO_SetBlack(FALSE);
+	VIDEO_Flush();
+	VIDEO_WaitVSync();
+	if(rmode->viTVMode&VI_NON_INTERLACE) VIDEO_WaitVSync();
+
+	CGX_Init();
+
+	GX_SetCopyClear(background, 0x00ffffff);
+	GX_SetViewport(0,0,rmode->fbWidth,rmode->efbHeight,0,1);
+	yscale = GX_GetYScaleFactor(rmode->efbHeight, rmode->xfbHeight);
+	xfbHeight = GX_SetDispCopyYScale(yscale);
+	GX_SetScissor(0,0,rmode->fbWidth,rmode->efbHeight);
+    GX_SetDispCopySrc(0,0,rmode->fbWidth,rmode->efbHeight);
+    GX_SetDispCopyDst(rmode->fbWidth,xfbHeight);
+	GX_SetCopyFilter(rmode->aa, rmode->sample_pattern, 1, rmode->vfilter);
+	GX_SetFieldMode(rmode->field_rendering, ((rmode->viHeight==2*rmode->xfbHeight)?1:0));
+	GX_SetDispCopyGamma(GX_GM_1_0);
+#else
+	CGX_Init();
+
+	GX_SetCopyClear(background, 0x00ffffff);
+	GX_SetViewport(0,0,640,528,0,1);
+	GX_SetScissor(0,0,640,528);
+#endif
+	network_printf("%d...\n", __LINE__);
+
+	test_buffer = (u32*)memalign(32, 640*528*4);
+
+	GX_SetTexCopySrc(0, 0, 100, 100);
+	GX_SetTexCopyDst(100, 100, GX_TF_RGBA8, false);
+
+	/*	PE_CONTROL ctrl;
+	ctrl.hex = BPMEM_ZCOMPARE<<24;
+	ctrl.pixel_format = PIXELFMT_RGBA6_Z24;
+	ctrl.zformat = ZC_LINEAR;
+	ctrl.early_ztest = 0;
+	CGX_LOAD_BP_REG(ctrl.hex);*/
+
+
+	// We draw a dummy quad here to apply cached GX state...
+	// TODO: Implement proper GPU initialization in GX so that we don't need
+	// to do this anymore
+	GX_ClearVtxDesc();
+	GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+
+	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+
+    Mtx model;
+	guMtxIdentity(model);
+	GX_LoadPosMtxImm(model, GX_PNMTX0);
+
+	float mtx[4][4];
+	memset(mtx, 0, sizeof(mtx));
+	mtx[0][0] = 1;
+	mtx[1][1] = 1;
+	mtx[2][2] = -1;
+	CGX_LoadProjectionMatrixOrthographic(mtx);
+
+	GX_SetNumChans(1); // damnit dirty state...
+	GX_SetNumTexGens(0);
+	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+	GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+
+	GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
+	// Bottom right
+	wgPipe->F32 = -1.0;
+	wgPipe->F32 = 1.0;
+	wgPipe->F32 = 1.0;
+	wgPipe->U32 = 0xFFFFFFFF;
+
+	// Top right
+	wgPipe->F32 = 1.0;
+	wgPipe->F32 = 1.0;
+	wgPipe->F32 = 1.0;
+	wgPipe->U32 = 0xFFFFFFFF;
+
+	// Top left
+	wgPipe->F32 = 1.0;
+	wgPipe->F32 = -1.0;
+	wgPipe->F32 = 1.0;
+	wgPipe->U32 = 0xFFFFFFFF;
+
+	// Bottom left
+	wgPipe->F32 = -1.0;
+	wgPipe->F32 = -1.0;
+	wgPipe->F32 = 1.0;
+	wgPipe->U32 = 0xFFFFFFFF;
+
+	GX_End();
+}
+
+Vec4<u8> ReadTestBuffer(int s, int t, int width)
+{
+	u16 sBlk = s >> 2;
+	u16 tBlk = t >> 2;
+	u16 widthBlks = (width >> 2) + 1;
+	u32 base = (tBlk * widthBlks + sBlk) << 5;
+	u16 blkS = s & 3;
+	u16 blkT =  t & 3;
+	u32 blkOff = (blkT << 2) + blkS;
+
+	u32 offset = (base + blkOff) << 1 ;
+	const u8* valAddr = ((u8*)test_buffer) + offset;
+
+	Vec4<u8> ret;
+	ret.r = valAddr[1];
+	ret.g = valAddr[32];
+	ret.b = valAddr[33];
+	ret.a = valAddr[0];
+	return ret;
+}
+
+void DrawFullScreenQuad()
+{
+	VAT vtxattr;
+	vtxattr.g0.Hex = 0;
+	vtxattr.g1.Hex = 0;
+	vtxattr.g2.Hex = 0;
+
+	vtxattr.g0.PosElements = VA_TYPE_POS_XYZ;
+	vtxattr.g0.PosFormat = VA_FMT_F32;
+
+	vtxattr.g0.Color0Elements = VA_TYPE_CLR_RGBA;
+	vtxattr.g0.Color0Comp = VA_FMT_RGBA8;
+
+	// TODO: Figure out what this does and why it needs to be 1 for Dolphin not to error out
+	vtxattr.g0.ByteDequant = 1;
+
+	TVtxDesc vtxdesc;
+	vtxdesc.Hex = 0;
+	vtxdesc.Position = VTXATTR_DIRECT;
+	vtxdesc.Color0 = VTXATTR_DIRECT;
+
+	// TODO: Not sure if the order of these two is correct
+	CGX_LOAD_CP_REG(0x50, vtxdesc.Hex0);
+	CGX_LOAD_CP_REG(0x60, vtxdesc.Hex1);
+
+	CGX_LOAD_CP_REG(0x70, vtxattr.g0.Hex);
+	CGX_LOAD_CP_REG(0x80, vtxattr.g1.Hex);
+	CGX_LOAD_CP_REG(0x90, vtxattr.g2.Hex);
+
+	/* TODO: Should reset this matrix..
+	float mtx[3][4];
+	memset(&mtx, 0, sizeof(mtx));
+	mtx[0][0] = 1.0;
+	mtx[1][1] = 1.0;
+	mtx[2][2] = 1.0;
+	CGX_LoadPosMatrixDirect(mtx, 0);*/
+
+	float mtx[4][4];
+	memset(mtx, 0, sizeof(mtx));
+	mtx[0][0] = 1;
+	mtx[1][1] = 1;
+	mtx[2][2] = -1;
+	CGX_LoadProjectionMatrixOrthographic(mtx);
+
+	wgPipe->U8 = 0x80; // draw quads
+	wgPipe->U16 = 4; // 4 vertices
+
+	// 0x00FF0000 = green
+	// 0xFF000000 = red
+	// 0x0000FF00 = blue
+
+	// Bottom right
+	wgPipe->F32 = -1.0;
+	wgPipe->F32 = 1.0;
+	wgPipe->F32 = 1.0;
+	wgPipe->U32 = 0xFFFFFFFF;
+
+	// Top right
+	wgPipe->F32 = 1.0;
+	wgPipe->F32 = 1.0;
+	wgPipe->F32 = 1.0;
+	wgPipe->U32 = 0xFFFFFFFF;
+
+	// Top left
+	wgPipe->F32 = 1.0;
+	wgPipe->F32 = -1.0;
+	wgPipe->F32 = 1.0;
+	wgPipe->U32 = 0xFFFFFFFF;
+
+	// Bottom left
+	wgPipe->F32 = -1.0;
+	wgPipe->F32 = -1.0;
+	wgPipe->F32 = 1.0;
+	wgPipe->U32 = 0xFFFFFFFF;
+}
+
+// TODO: Make this behave flexible with regards to the current EFB format!
+Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorCombiner& last_cc)
+{
+	int previous_stage = ((last_cc.hex >> 24)-BPMEM_TEV_COLOR_ENV)>>1;
+	assert(previous_stage < 13);
+
+	// FIRST RENDER PASS:
+	// As set up by the caller, used to retrieve lower 8 bits of the TEV output
+
+//	memset(test_buffer, 0, TEST_BUFFER_SIZE); // Just for debugging
+	DrawFullScreenQuad();
+	CGX_DoEfbCopyTex(0, 0, 100, 100, 0x6 /*RGBA8*/, false, test_buffer);
+	CGX_ForcePipelineFlush();
+	CGX_WaitForGpuToFinish();
+	u16 result1r = ReadTestBuffer(5, 5, 100).r;
+	u16 result1g = ReadTestBuffer(5, 5, 100).g;
+	u16 result1b = ReadTestBuffer(5, 5, 100).b;
+	u16 result1a = ReadTestBuffer(5, 5, 100).a;
+
+	// SECOND RENDER PASS
+	// Uses three additional TEV stages which shift the previous result
+	// three bits to the right. This is necessary to read off the upper bits,
+	// which got masked off when writing to the EFB in the first pass.
+	auto gm = genmode;
+	gm.numtevstages = previous_stage + 3; // three additional stages
+	CGX_LOAD_BP_REG(gm.hex);
+
+	// The following tev stages are exclusively used to rightshift the
+	// upper bits such that they get written to the render target.
+
+	auto cc1 = CGXDefault<TevStageCombiner::ColorCombiner>(previous_stage+1);
+	cc1.d = last_cc.dest * 2;
+	cc1.shift = TEVDIVIDE_2;
+	CGX_LOAD_BP_REG(cc1.hex);
+
+	cc1 = CGXDefault<TevStageCombiner::ColorCombiner>(previous_stage+2);
+	cc1.d = last_cc.dest * 2;
+	cc1.shift = TEVDIVIDE_2;
+	CGX_LOAD_BP_REG(cc1.hex);
+
+	cc1 = CGXDefault<TevStageCombiner::ColorCombiner>(previous_stage+3);
+	cc1.d = last_cc.dest * 2;
+	cc1.shift = TEVDIVIDE_2;
+	CGX_LOAD_BP_REG(cc1.hex);
+
+	memset(test_buffer, 0, TEST_BUFFER_SIZE);
+	DrawFullScreenQuad();
+	CGX_DoEfbCopyTex(0, 0, 100, 100, 0x6 /*RGBA8*/, false, test_buffer);
+	CGX_ForcePipelineFlush();
+	CGX_WaitForGpuToFinish();
+
+	u16 result2r = ReadTestBuffer(5, 5, 100).r >> 5;
+	u16 result2g = ReadTestBuffer(5, 5, 100).g >> 5;
+	u16 result2b = ReadTestBuffer(5, 5, 100).b >> 5;
+	u16 result2a = ReadTestBuffer(5, 5, 100).a >> 5;
+
+	// uh.. let's just say this works, but I guess it could be simplified.
+	Vec4<int> result;
+	result.r = result1r + ((result2r & 0x4) ? (-0x400+((result2r&0x3)<<8)) : (result2r<<8));
+	result.g = result1g + ((result2g & 0x4) ? (-0x400+((result2g&0x3)<<8)) : (result2g<<8));
+	result.b = result1b + ((result2b & 0x4) ? (-0x400+((result2b&0x3)<<8)) : (result2b<<8));
+	result.a = result1a + ((result2a & 0x4) ? (-0x400+((result2a&0x3)<<8)) : (result2a<<8));
+
+	return result;
+}
+
+}
