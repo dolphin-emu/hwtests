@@ -810,8 +810,8 @@ union TevReg
 
 	u64 hex;
 
-	BitField< 0, 32, u64, u32> low;
-	BitField<32, 32, u64, u32> high;
+	BitField< 0, 32, u64> low;
+	BitField<32, 32, u64> high;
 };
 
 union TevKSel

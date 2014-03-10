@@ -178,11 +178,11 @@ void BitfieldTest()
 	TevReg reg;
 	reg.hex = 0;
 	reg.low = 0x345678;
-	DO_TEST(reg.alpha == -392, "Values don't match (have: %d %d)", (s32)reg.alpha, (s32)reg.alpha);
-	DO_TEST(reg.red == 837, "Values don't match (have: %d %d)", (s32)reg.red, (s32)reg.red);
+	DO_TEST(reg.alpha == 837, "Values don't match (have: %d %d)", (s32)reg.alpha, (s32)reg.alpha);
+	DO_TEST(reg.red == -392, "Values don't match (have: %d %d)", (s32)reg.red, (s32)reg.red);
 	reg.low = 0x4BC6A8;
-	DO_TEST(reg.alpha == -344, "Values don't match (have: %d %d)", (s32)reg.alpha);
-	DO_TEST(reg.red == -836, "Values don't match (have: %d %d)", (s32)reg.red);
+	DO_TEST(reg.alpha == -836, "Values don't match (have: %d %d)", (s32)reg.alpha);
+	DO_TEST(reg.red == -344, "Values don't match (have: %d %d)", (s32)reg.red);
 	reg.alpha = -263;
 	reg.red = -345;
 	DO_TEST(reg.alpha == -263, "Values don't match (have: %d %d)", (s32)reg.alpha);
@@ -491,7 +491,7 @@ int main()
 	GX_End();
 
 	// Testing begins here!
-	TevCombinerTest();
+//	TevCombinerTest();
 
 	// Shut down...
 	network_printf("Shutting down...\n");
