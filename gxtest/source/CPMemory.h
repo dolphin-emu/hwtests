@@ -144,12 +144,11 @@ union TVtxDesc
 {
 	u64 Hex;
 
-	struct
-	{
-		u32 Hex0, Hex1;
-	};
-	u8 byte[8];
+	BitField< 0,32,u64> Hex0;
+	BitField<32,32,u64> Hex1;
 
+	// Note: Access to this array is not endianness-independent.
+	u8 byte[8];
 
 	BitField<0,1,u64> PosMatIdx;
 	BitField<1,1,u64> Tex0MatIdx;
@@ -275,11 +274,7 @@ union TMatrixIndexA
 	BitField<18,6,u32> Tex2MtxIdx;
 	BitField<24,6,u32> Tex3MtxIdx;
 
-	struct
-	{
-		u32 Hex : 30;
-		u32 unused : 2;
-	};
+	BitField<0,30,u32> Hex;
 };
 
 union TMatrixIndexB
@@ -288,11 +283,8 @@ union TMatrixIndexB
 	BitField<6,6,u32> Tex5MtxIdx;
 	BitField<12,6,u32> Tex6MtxIdx;
 	BitField<18,6,u32> Tex7MtxIdx;
-	struct
-	{
-		u32 Hex : 24;
-		u32 unused : 8;
-	};
+
+	BitField<0,24,u32> Hex;
 };
 
 #pragma pack()
