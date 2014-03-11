@@ -21,6 +21,30 @@ union Vec4
 	};
 };
 
+// Utility class to draw quads
+class Quad
+{
+public:
+	Quad();
+
+	Quad& VertexTopLeft(f32 x, f32 y, f32 z);
+	Quad& VertexTopRight(f32 x, f32 y, f32 z);
+	Quad& VertexBottomRight(f32 x, f32 y, f32 z);
+	Quad& VertexBottomLeft(f32 x, f32 y, f32 z);
+
+	Quad& AtDepth(f32 depth);
+
+	Quad& ColorRGBA(u8 r, u8 g, u8 b, u8 a);
+
+	void Draw();
+
+private:
+	f32 x[4], y[4], z[4];
+
+	bool has_color;
+	u32 color;
+};
+
 // Initialize CGX and GXTest
 void Init();
 
@@ -41,5 +65,8 @@ Vec4<u8> ReadTestBuffer(int x, int y, int previous_copy_width);
 // The function logic adds 3 additional tev stages
 // NOTE: This will only work correctly if the EFB format is set to RGB8
 Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorCombiner& last_cc);
+
+void DebugDisplayEfbContents();
+
 
 } // namespace

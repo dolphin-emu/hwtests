@@ -11,8 +11,8 @@
 #include "cgx_defaults.h"
 #include "gxtest_util.h"
 
-//#define ENABLE_DEBUG_DISPLAY
-#include "Test.h" // TODO
+#define ENABLE_DEBUG_DISPLAY
+
 namespace GXTest
 {
 #define TEST_BUFFER_SIZE (640*528*4)
@@ -66,7 +66,6 @@ void Init()
 	GX_SetViewport(0,0,640,528,0,1);
 	GX_SetScissor(0,0,640,528);
 #endif
-	network_printf("%d...\n", __LINE__);
 
 	test_buffer = (u32*)memalign(32, 640*528*4);
 
@@ -135,6 +134,18 @@ void Init()
 	GX_End();
 }
 
+void DebugDisplayEfbContents()
+{
+#ifdef ENABLE_DEBUG_DISPLAY
+	CGX_DoEfbCopyXfb(0, 0, rmode->fbWidth, rmode->efbHeight, xfbHeight, frameBuffer[fb]);
+
+	VIDEO_SetNextFramebuffer(frameBuffer[fb]);
+	VIDEO_Flush();
+	VIDEO_WaitVSync();
+	fb ^= 1;
+#endif
+}
+
 Vec4<u8> ReadTestBuffer(int s, int t, int width)
 {
 	u16 sBlk = s >> 2;
@@ -156,7 +167,79 @@ Vec4<u8> ReadTestBuffer(int s, int t, int width)
 	return ret;
 }
 
-void DrawFullScreenQuad()
+Quad::Quad()
+{
+	// top left
+	x[0] = -1.0;
+	y[0] =  1.0;
+	z[0] =  1.0;
+
+	// top right
+	x[1] =  1.0;
+	y[1] =  1.0;
+	z[1] =  1.0;
+
+	// bottom right
+	x[2] =  1.0;
+	y[2] = -1.0;
+	z[2] =  1.0;
+
+	// bottom left
+	x[3] = -1.0;
+	y[3] = -1.0;
+	z[3] =  1.0;
+
+	has_color = false;
+}
+
+Quad& Quad::VertexTopLeft(f32 x, f32 y, f32 z)
+{
+	this->x[0] = x;
+	this->y[0] = y;
+	this->z[0] = z;
+	return *this;
+}
+
+Quad& Quad::VertexTopRight(f32 x, f32 y, f32 z)
+{
+	this->x[1] = x;
+	this->y[1] = y;
+	this->z[1] = z;
+	return *this;
+}
+
+Quad& Quad::VertexBottomRight(f32 x, f32 y, f32 z)
+{
+	this->x[2] = x;
+	this->y[2] = y;
+	this->z[2] = z;
+	return *this;
+}
+
+Quad& Quad::VertexBottomLeft(f32 x, f32 y, f32 z)
+{
+	this->x[3] = x;
+	this->y[3] = y;
+	this->z[3] = z;
+	return *this;
+}
+
+Quad& Quad::AtDepth(f32 depth)
+{
+	z[0] = z[1] = z[2] = z[3] = depth;
+
+	return *this;
+}
+
+Quad& Quad::ColorRGBA(u8 r, u8 g, u8 b, u8 a)
+{
+	color = ((u32)r << 24) | ((u32)g << 16) | ((u32)b << 8) | (u32)a;
+	has_color = true;
+
+	return *this;
+}
+
+void Quad::Draw()
 {
 	VAT vtxattr;
 	vtxattr.g0.Hex = 0;
@@ -166,8 +249,11 @@ void DrawFullScreenQuad()
 	vtxattr.g0.PosElements = VA_TYPE_POS_XYZ;
 	vtxattr.g0.PosFormat = VA_FMT_F32;
 
-	vtxattr.g0.Color0Elements = VA_TYPE_CLR_RGBA;
-	vtxattr.g0.Color0Comp = VA_FMT_RGBA8;
+	if (has_color)
+	{
+		vtxattr.g0.Color0Elements = VA_TYPE_CLR_RGBA;
+		vtxattr.g0.Color0Comp = VA_FMT_RGBA8;
+	}
 
 	// TODO: Figure out what this does and why it needs to be 1 for Dolphin not to error out
 	vtxattr.g0.ByteDequant = 1;
@@ -175,7 +261,9 @@ void DrawFullScreenQuad()
 	TVtxDesc vtxdesc;
 	vtxdesc.Hex = 0;
 	vtxdesc.Position = VTXATTR_DIRECT;
-	vtxdesc.Color0 = VTXATTR_DIRECT;
+
+	if (has_color)
+		vtxdesc.Color0 = VTXATTR_DIRECT;
 
 	// TODO: Not sure if the order of these two is correct
 	CGX_LOAD_CP_REG(0x50, vtxdesc.Hex0);
@@ -203,33 +291,15 @@ void DrawFullScreenQuad()
 	wgPipe->U8 = 0x80; // draw quads
 	wgPipe->U16 = 4; // 4 vertices
 
-	// 0x00FF0000 = green
-	// 0xFF000000 = red
-	// 0x0000FF00 = blue
+	for (int i = 0; i < 4; ++i)
+	{
+		wgPipe->F32 = x[i];
+		wgPipe->F32 = y[i];
+		wgPipe->F32 = z[i];
 
-	// Bottom right
-	wgPipe->F32 = -1.0;
-	wgPipe->F32 = 1.0;
-	wgPipe->F32 = 1.0;
-	wgPipe->U32 = 0xFFFFFFFF;
-
-	// Top right
-	wgPipe->F32 = 1.0;
-	wgPipe->F32 = 1.0;
-	wgPipe->F32 = 1.0;
-	wgPipe->U32 = 0xFFFFFFFF;
-
-	// Top left
-	wgPipe->F32 = 1.0;
-	wgPipe->F32 = -1.0;
-	wgPipe->F32 = 1.0;
-	wgPipe->U32 = 0xFFFFFFFF;
-
-	// Bottom left
-	wgPipe->F32 = -1.0;
-	wgPipe->F32 = -1.0;
-	wgPipe->F32 = 1.0;
-	wgPipe->U32 = 0xFFFFFFFF;
+		if (has_color)
+			wgPipe->U32 = color;
+	}
 }
 
 // TODO: Make this behave flexible with regards to the current EFB format!
@@ -242,7 +312,7 @@ Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorComb
 	// As set up by the caller, used to retrieve lower 8 bits of the TEV output
 
 //	memset(test_buffer, 0, TEST_BUFFER_SIZE); // Just for debugging
-	DrawFullScreenQuad();
+	Quad().AtDepth(1.0).ColorRGBA(255,255,255,255).Draw();
 	CGX_DoEfbCopyTex(0, 0, 100, 100, 0x6 /*RGBA8*/, false, test_buffer);
 	CGX_ForcePipelineFlush();
 	CGX_WaitForGpuToFinish();
@@ -278,7 +348,7 @@ Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorComb
 	CGX_LOAD_BP_REG(cc1.hex);
 
 	memset(test_buffer, 0, TEST_BUFFER_SIZE);
-	DrawFullScreenQuad();
+	Quad().AtDepth(1.0).ColorRGBA(255,255,255,255).Draw();
 	CGX_DoEfbCopyTex(0, 0, 100, 100, 0x6 /*RGBA8*/, false, test_buffer);
 	CGX_ForcePipelineFlush();
 	CGX_WaitForGpuToFinish();

@@ -74,9 +74,9 @@ void TevCombinerTest()
 
 	CGX_LOAD_BP_REG(CGXDefault<TevStageCombiner::AlphaCombiner>(0).hex);
 
-#if 1
 	// Test if we can extract all bits of the tev combiner output...
 	auto tevreg = CGXDefault<TevReg>(1, false); // c0
+#if 0
 	for (tevreg.red = -1024; tevreg.red != 1023; tevreg.red = tevreg.red+1)
 	{
 		CGX_LOAD_BP_REG(tevreg.low);
@@ -152,6 +152,63 @@ void TevCombinerTest()
 	END_TEST();
 }
 
+void ClipTest()
+{
+	START_TEST();
+
+	CGX_LOAD_BP_REG(CGXDefault<TwoTevStageOrders>(0).hex);
+
+	CGX_BEGIN_LOAD_XF_REGS(0x1009, 1);
+	wgPipe->U32 = 1; // 1 color channel
+
+	LitChannel chan;
+	chan.hex = 0;
+	chan.matsource = 1; // from vertex
+	CGX_BEGIN_LOAD_XF_REGS(0x100e, 1); // color channel 1
+	wgPipe->U32 = chan.hex;
+	CGX_BEGIN_LOAD_XF_REGS(0x1010, 1); // alpha channel 1
+	wgPipe->U32 = chan.hex;
+
+	CGX_LOAD_BP_REG(CGXDefault<TevStageCombiner::AlphaCombiner>(0).hex);
+
+	auto genmode = CGXDefault<GenMode>();
+	genmode.numtevstages = 0; // One stage
+	CGX_LOAD_BP_REG(genmode.hex);
+
+	for (int i = 0; i < 200; ++i)
+	{
+		network_printf("step %d\n", i);
+
+		GX_SetViewport(100, 100, 50.f, 50, 0, 1);
+
+		auto zmode = CGXDefault<ZMode>();
+		CGX_LOAD_BP_REG(zmode.hex);
+
+		auto cc = CGXDefault<TevStageCombiner::ColorCombiner>(0);
+		cc.d = TEVCOLORARG_RASC;
+		CGX_LOAD_BP_REG(cc.hex);
+		GXTest::Quad().ColorRGBA(0,0x7f,0,0xff).Draw();
+
+		cc.d = TEVCOLORARG_C0;
+		CGX_LOAD_BP_REG(cc.hex);
+
+		auto tevreg = CGXDefault<TevReg>(1, false); // c0
+		tevreg.red = rand()%256;
+		CGX_LOAD_BP_REG(tevreg.low);
+		CGX_LOAD_BP_REG(tevreg.high);
+
+		CGX_BEGIN_LOAD_XF_REGS(0x1005, 1);
+		wgPipe->U32 = 0; // 0 = enable clipping, 1 = disable clipping
+
+		GXTest::Quad().ColorRGBA(0xff,0xff,0xff,0xff).AtDepth(1.00000001).Draw();
+		CGX_WaitForGpuToFinish();
+
+		GXTest::DebugDisplayEfbContents();
+	}
+
+	END_TEST();
+}
+
 int main()
 {
 	network_init();
@@ -160,7 +217,8 @@ int main()
 	GXTest::Init();
 
 	BitfieldTest();
-	TevCombinerTest();
+//	TevCombinerTest();
+	ClipTest();
 
 	network_printf("Shutting down...\n");
 	network_shutdown();

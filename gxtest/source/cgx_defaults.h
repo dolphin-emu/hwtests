@@ -33,6 +33,17 @@ GenMode CGXDefault<GenMode>()
 }
 
 template<>
+ZMode CGXDefault<ZMode>()
+{
+	ZMode zmode;
+	zmode.hex = BPMEM_ZMODE << 24;
+	zmode.testenable = 0;
+	zmode.func = COMPARE_ALWAYS;
+	zmode.updateenable = 0;
+	return zmode;
+}
+
+template<>
 TevStageCombiner::ColorCombiner CGXDefault<TevStageCombiner::ColorCombiner>(int stage)
 {
 	TevStageCombiner::ColorCombiner cc;

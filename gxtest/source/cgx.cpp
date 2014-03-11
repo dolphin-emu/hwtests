@@ -69,14 +69,13 @@ void CGX_Init()
 
 void CGX_SetViewport(float origin_x, float origin_y, float width, float height, float near, f32 far)
 {
-/*	CGX_BEGIN_LOAD_XF_REGS(0x101a,6);
+	CGX_BEGIN_LOAD_XF_REGS(0x101a,6);
 	wgPipe->F32 = width*0.5;
 	wgPipe->F32 = -height*0.5;
 	wgPipe->F32 = (far-near)*16777215.0;
 	wgPipe->F32 = 342.0+origin_x+width*0.5;
 	wgPipe->F32 = 342.0+origin_y+height*0.5;
-	wgPipe->F32 = far*16777215.0;*/
-	GX_SetViewport(origin_x, origin_y, width, height, near, far);
+	wgPipe->F32 = far*16777215.0;
 }
 
 static inline void WriteMtxPS4x2(register f32 mt[3][4], register void* wgpipe)
