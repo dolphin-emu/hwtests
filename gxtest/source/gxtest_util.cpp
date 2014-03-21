@@ -11,7 +11,7 @@
 #include "cgx_defaults.h"
 #include "gxtest_util.h"
 
-#define ENABLE_DEBUG_DISPLAY
+//#define ENABLE_DEBUG_DISPLAY
 
 namespace GXTest
 {
@@ -138,6 +138,7 @@ void DebugDisplayEfbContents()
 {
 #ifdef ENABLE_DEBUG_DISPLAY
 	CGX_DoEfbCopyXfb(0, 0, rmode->fbWidth, rmode->efbHeight, xfbHeight, frameBuffer[fb]);
+	CGX_WaitForGpuToFinish();
 
 	VIDEO_SetNextFramebuffer(frameBuffer[fb]);
 	VIDEO_Flush();
@@ -301,6 +302,17 @@ void Quad::Draw()
 			wgPipe->U32 = color;
 	}
 }
+
+void CopyToTestBuffer(int left_most_pixel, int top_most_pixel, int right_most_pixel, int bottom_most_pixel)
+{
+	// TODO: Do we need to impose additional constraints on the parameters?
+	memset(test_buffer, 0, TEST_BUFFER_SIZE);
+	CGX_DoEfbCopyTex(left_most_pixel, top_most_pixel,
+	                 right_most_pixel - left_most_pixel + 1,
+	                 bottom_most_pixel - top_most_pixel + 1, 0x6 /*RGBA8*/,
+	                 false, test_buffer);
+}
+
 
 // TODO: Make this behave flexible with regards to the current EFB format!
 Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorCombiner& last_cc)
