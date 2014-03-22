@@ -40,6 +40,10 @@ void BitfieldTest()
 
 int TevCombinerExpectation(int a, int b, int c, int d, int shift, int bias, int op, int clamp)
 {
+	a &= 255;
+	b &= 255;
+	c &= 255;
+
 	// TODO: Does not handle compare mode, yet
 	c = c+(c>>7);
 	u16 lshift = (shift == 1) ? 1 : (shift == 2) ? 2 : 0;
@@ -93,7 +97,7 @@ void TevCombinerTest()
 
 		int result = GXTest::GetTevOutput(genmode, cc).r;
 
-		DO_TEST(result == tevreg.red, "Source test value %d: Got %d", tevreg.red, result);
+		DO_TEST(result == tevreg.red, "Source test value %d: Got %d", (s32)tevreg.red, result);
 	}
 #endif
 

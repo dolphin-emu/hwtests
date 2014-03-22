@@ -314,37 +314,54 @@ void CopyToTestBuffer(int left_most_pixel, int top_most_pixel, int right_most_pi
 }
 
 
-// TODO: Make this behave flexible with regards to the current EFB format!
 Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorCombiner& last_cc)
 {
 	int previous_stage = ((last_cc.hex >> 24)-BPMEM_TEV_COLOR_ENV)>>1;
 	assert(previous_stage < 13);
 
+	// The TEV output gets truncated to 8 bits when writing to the EFB.
+	// Hence, we cannot retrieve all 11 TEV output bits directly.
+	// Instead, we're performing two render passes, one of which retrieves
+	// the lower 6 output bits, the other one of which retrieves the upper
+	// 5 bits.
+
 	// FIRST RENDER PASS:
-	// As set up by the caller, used to retrieve lower 8 bits of the TEV output
+	// As set up by the caller, with one additional tev stage multiplying the result by 4.
+	// This will retrieve the lower 6 bits of the TEV output.
+
+	auto gm = genmode;
+	gm.numtevstages = previous_stage + 1; // one additional stage
+	CGX_LOAD_BP_REG(gm.hex);
+
+	// Enable new TEV stage. Note that we are using the "a" input here to make
+	// sure the input doesn't get erroneously clamped to 11 bit range.
+	auto cc1 = CGXDefault<TevStageCombiner::ColorCombiner>(previous_stage+1);
+	cc1.a = last_cc.dest * 2;
+	cc1.shift = TEVSCALE_4;
+	CGX_LOAD_BP_REG(cc1.hex);
 
 //	memset(test_buffer, 0, TEST_BUFFER_SIZE); // Just for debugging
 	Quad().AtDepth(1.0).ColorRGBA(255,255,255,255).Draw();
 	CGX_DoEfbCopyTex(0, 0, 100, 100, 0x6 /*RGBA8*/, false, test_buffer);
 	CGX_ForcePipelineFlush();
 	CGX_WaitForGpuToFinish();
-	u16 result1r = ReadTestBuffer(5, 5, 100).r;
-	u16 result1g = ReadTestBuffer(5, 5, 100).g;
-	u16 result1b = ReadTestBuffer(5, 5, 100).b;
-	u16 result1a = ReadTestBuffer(5, 5, 100).a;
+	u16 result1r = ReadTestBuffer(5, 5, 100).r >> 2;
+	u16 result1g = ReadTestBuffer(5, 5, 100).g >> 2;
+	u16 result1b = ReadTestBuffer(5, 5, 100).b >> 2;
+	u16 result1a = ReadTestBuffer(5, 5, 100).a >> 2;
 
 	// SECOND RENDER PASS
 	// Uses three additional TEV stages which shift the previous result
-	// three bits to the right. This is necessary to read off the upper bits,
-	// which got masked off when writing to the EFB in the first pass.
-	auto gm = genmode;
+	// three bits to the right. This is necessary to read off the 5 upper bits,
+	// 3 of which got masked off when writing to the EFB in the first pass.
+	gm = genmode;
 	gm.numtevstages = previous_stage + 3; // three additional stages
 	CGX_LOAD_BP_REG(gm.hex);
 
 	// The following tev stages are exclusively used to rightshift the
 	// upper bits such that they get written to the render target.
 
-	auto cc1 = CGXDefault<TevStageCombiner::ColorCombiner>(previous_stage+1);
+	cc1 = CGXDefault<TevStageCombiner::ColorCombiner>(previous_stage+1);
 	cc1.d = last_cc.dest * 2;
 	cc1.shift = TEVDIVIDE_2;
 	CGX_LOAD_BP_REG(cc1.hex);
@@ -365,17 +382,17 @@ Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorComb
 	CGX_ForcePipelineFlush();
 	CGX_WaitForGpuToFinish();
 
-	u16 result2r = ReadTestBuffer(5, 5, 100).r >> 5;
-	u16 result2g = ReadTestBuffer(5, 5, 100).g >> 5;
-	u16 result2b = ReadTestBuffer(5, 5, 100).b >> 5;
-	u16 result2a = ReadTestBuffer(5, 5, 100).a >> 5;
+	u16 result2r = ReadTestBuffer(5, 5, 100).r >> 3;
+	u16 result2g = ReadTestBuffer(5, 5, 100).g >> 3;
+	u16 result2b = ReadTestBuffer(5, 5, 100).b >> 3;
+	u16 result2a = ReadTestBuffer(5, 5, 100).a >> 3;
 
 	// uh.. let's just say this works, but I guess it could be simplified.
 	Vec4<int> result;
-	result.r = result1r + ((result2r & 0x4) ? (-0x400+((result2r&0x3)<<8)) : (result2r<<8));
-	result.g = result1g + ((result2g & 0x4) ? (-0x400+((result2g&0x3)<<8)) : (result2g<<8));
-	result.b = result1b + ((result2b & 0x4) ? (-0x400+((result2b&0x3)<<8)) : (result2b<<8));
-	result.a = result1a + ((result2a & 0x4) ? (-0x400+((result2a&0x3)<<8)) : (result2a<<8));
+	result.r = result1r + ((result2r & 0x10) ? (-0x400+((result2r&0xF)<<6)) : (result2r<<6));
+	result.g = result1g + ((result2g & 0x10) ? (-0x400+((result2g&0xF)<<6)) : (result2g<<6));
+	result.b = result1b + ((result2b & 0x10) ? (-0x400+((result2b&0xF)<<6)) : (result2b<<6));
+	result.a = result1a + ((result2a & 0x10) ? (-0x400+((result2a&0xF)<<6)) : (result2a<<6));
 
 	return result;
 }
