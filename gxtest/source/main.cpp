@@ -77,29 +77,63 @@ void TevCombinerTest()
 	CGX_BEGIN_LOAD_XF_REGS(0x1010, 1); // alpha channel 1
 	wgPipe->U32 = chan.hex;
 
-	CGX_LOAD_BP_REG(CGXDefault<TevStageCombiner::AlphaCombiner>(0).hex);
+	auto ac = CGXDefault<TevStageCombiner::AlphaCombiner>(0);
+	CGX_LOAD_BP_REG(ac.hex);
 
-	// Test if we can extract all bits of the tev combiner output...
+	// Test if we can reliably extract all bits of the tev combiner output...
 	auto tevreg = CGXDefault<TevReg>(1, false); // c0
-#if 1
-	for (tevreg.red = -1024; tevreg.red != 1023; tevreg.red = tevreg.red+1)
-	{
-		CGX_LOAD_BP_REG(tevreg.low);
-		CGX_LOAD_BP_REG(tevreg.high);
+	for (int i = 0; i < 2; ++i)
+		for (tevreg.red = -1024; tevreg.red != 1023; tevreg.red = tevreg.red+1)
+		{
+			CGX_LOAD_BP_REG(tevreg.low);
+			CGX_LOAD_BP_REG(tevreg.high);
 
-		auto genmode = CGXDefault<GenMode>();
-		genmode.numtevstages = 0; // One stage
-		CGX_LOAD_BP_REG(genmode.hex);
+			auto genmode = CGXDefault<GenMode>();
+			genmode.numtevstages = 0; // One stage
+			CGX_LOAD_BP_REG(genmode.hex);
 
-		auto cc = CGXDefault<TevStageCombiner::ColorCombiner>(0);
-		cc.d = TEVCOLORARG_C0;
-		CGX_LOAD_BP_REG(cc.hex);
+			auto cc = CGXDefault<TevStageCombiner::ColorCombiner>(0);
+			cc.d = TEVCOLORARG_C0;
+			CGX_LOAD_BP_REG(cc.hex);
 
-		int result = GXTest::GetTevOutput(genmode, cc).r;
+			PE_CONTROL ctrl;
+			ctrl.hex = BPMEM_ZCOMPARE<<24;
+			ctrl.zformat = ZC_LINEAR;
+			ctrl.early_ztest = 0;
+			if (i == 0)
+			{
+				// 8 bits per channel: No worries about GetTevOutput making
+				// mistakes when writing to framebuffer or when performing
+				// an EFB copy.
+				ctrl.pixel_format = PIXELFMT_RGB8_Z24;
+				CGX_LOAD_BP_REG(ctrl.hex);
 
-		DO_TEST(result == tevreg.red, "Source test value %d: Got %d", (s32)tevreg.red, result);
-	}
-#endif
+				int result = GXTest::GetTevOutput(genmode, cc, ac).r;
+
+				DO_TEST(result == tevreg.red, "Got %d, expected %d", result, (s32)tevreg.red);
+			}
+			else
+			{
+				// TODO: This doesn't quite work, yet.
+				break;
+
+				// 6 bits per channel: Implement GetTevOutput functionality
+				// manually, to verify how tev output is truncated to 6 bit
+				// and how EFB copies upscale that to 8 bit again.
+				ctrl.pixel_format = PIXELFMT_RGBA6_Z24;
+				CGX_LOAD_BP_REG(ctrl.hex);
+
+				GXTest::Quad().AtDepth(1.0).ColorRGBA(255,255,255,255).Draw();
+				GXTest::CopyToTestBuffer(0, 0, 99, 9);
+				CGX_ForcePipelineFlush();
+				CGX_WaitForGpuToFinish();
+				u16 result = GXTest::ReadTestBuffer(5, 5, 100).r;
+
+				int expected = (((tevreg.red+1)>>2)&0xFF) << 2;
+				expected = expected | (expected>>6);
+				DO_TEST(result == expected, "Run %d: Got %d, expected %d", (int)tevreg.red, result, expected);
+			}
+		}
 
 	// Now: Randomized testing of tev combiners.
 	for (int i = 0x000000; i < 0x000F000; ++i)
@@ -116,7 +150,7 @@ void TevCombinerTest()
 		cc.a = TEVCOLORARG_C0;
 		cc.b = TEVCOLORARG_C1;
 		cc.c = TEVCOLORARG_C2;
-		cc.d = TEVCOLORARG_ZERO;// TEVCOLORARG_CPREV; // NOTE: TEVCOLORARG_CPREV doesn't actually seem to fetch its data from PREV when used in the first stage?
+		cc.d = TEVCOLORARG_ZERO; // TEVCOLORARG_CPREV; // NOTE: TEVCOLORARG_CPREV doesn't actually seem to fetch its data from PREV when used in the first stage?
 		cc.shift = rand() % 4;
 		cc.bias = rand() % 3;
 		cc.op = rand()%2;
@@ -144,7 +178,14 @@ void TevCombinerTest()
 		CGX_LOAD_BP_REG(tevreg.low);
 		CGX_LOAD_BP_REG(tevreg.high);
 
-		int result = GXTest::GetTevOutput(genmode, cc).r;
+		PE_CONTROL ctrl;
+		ctrl.hex = BPMEM_ZCOMPARE<<24;
+		ctrl.pixel_format = PIXELFMT_RGB8_Z24;
+		ctrl.zformat = ZC_LINEAR;
+		ctrl.early_ztest = 0;
+		CGX_LOAD_BP_REG(ctrl.hex);
+
+		int result = GXTest::GetTevOutput(genmode, cc, ac).r;
 
 		int expected = TevCombinerExpectation(a, b, c, d, cc.shift, cc.bias, cc.op, cc.clamp);
 		DO_TEST(result == expected, "Mismatch on a=%d, b=%d, c=%d, d=%d, shift=%d, bias=%d, op=%d, clamp=%d: expected %d, got %d", a, b, c, d, (u32)cc.shift, (u32)cc.bias, (u32)cc.op, (u32)cc.clamp, expected, result);
@@ -154,6 +195,63 @@ void TevCombinerTest()
 		if (WPAD_ButtonsDown(0) & WPAD_BUTTON_HOME)
 			break;
 	}
+
+	// Testing compare mode: (a.r > b.r) ? c.a : 0
+	// One of the following will be the case for the alpha combiner:
+	// (1) a.r will be assigned the value of c2.r (color combiner setting)
+	// (2) a.r will be assigned the value of c0.r (alpha combiner setting)
+	// If (1) is the case, the first run of this test will return black and
+	// the second one will return red. If (2) is the case, the test will
+	// always return black.
+	// Indeed, this test shows that the alpha combiner reads the a and b
+	// inputs from the color combiner setting, i.e. scenario (1) is
+	// accurate to hardware behavior.
+	for (int i = 0; i < 2; ++i)
+	{
+		auto genmode = CGXDefault<GenMode>();
+		genmode.numtevstages = 0; // One stage
+		CGX_LOAD_BP_REG(genmode.hex);
+
+		auto cc = CGXDefault<TevStageCombiner::ColorCombiner>(0);
+		cc.a = TEVCOLORARG_C2;
+		cc.b = TEVCOLORARG_C1;
+		CGX_LOAD_BP_REG(cc.hex);
+
+		auto ac = CGXDefault<TevStageCombiner::AlphaCombiner>(0);
+		ac.bias = TevBias_COMPARE;
+		ac.a = TEVALPHAARG_A0; // different from color combiner
+		ac.b = TEVALPHAARG_A1; // same as color combiner
+		ac.c = TEVALPHAARG_A2;
+		CGX_LOAD_BP_REG(ac.hex);
+
+		PE_CONTROL ctrl;
+		ctrl.hex = BPMEM_ZCOMPARE<<24;
+		ctrl.pixel_format = PIXELFMT_RGBA6_Z24;
+		ctrl.zformat = ZC_LINEAR;
+		ctrl.early_ztest = 0;
+		CGX_LOAD_BP_REG(ctrl.hex);
+
+		tevreg = CGXDefault<TevReg>(1, false); // c0
+		tevreg.red = 127; // 127 is always NOT less than 127.
+		CGX_LOAD_BP_REG(tevreg.low);
+		CGX_LOAD_BP_REG(tevreg.high);
+
+		tevreg = CGXDefault<TevReg>(2, false); // c1
+		tevreg.red = 127;
+		CGX_LOAD_BP_REG(tevreg.low);
+		CGX_LOAD_BP_REG(tevreg.high);
+
+		tevreg = CGXDefault<TevReg>(3, false); // c2
+		tevreg.red = 127+i; // 127+i is less than 127 iff i>0.
+		tevreg.alpha = 255;
+		CGX_LOAD_BP_REG(tevreg.low);
+		CGX_LOAD_BP_REG(tevreg.high);
+
+		int result = GXTest::GetTevOutput(genmode, cc, ac).a;
+		int expected = (i == 1) ? 255 : 0;
+		DO_TEST(result == expected, "Mismatch on run %d: expected %d, got %d", i, expected, result);
+	}
+
 	END_TEST();
 }
 
@@ -179,6 +277,13 @@ void ClipTest()
 	auto genmode = CGXDefault<GenMode>();
 	genmode.numtevstages = 0; // One stage
 	CGX_LOAD_BP_REG(genmode.hex);
+
+	PE_CONTROL ctrl;
+	ctrl.hex = BPMEM_ZCOMPARE<<24;
+	ctrl.pixel_format = PIXELFMT_RGB8_Z24;
+	ctrl.zformat = ZC_LINEAR;
+	ctrl.early_ztest = 0;
+	CGX_LOAD_BP_REG(ctrl.hex);
 
 	for (int step = 0; step < 13; ++step)
 	{

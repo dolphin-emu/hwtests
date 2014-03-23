@@ -72,7 +72,7 @@ TevStageCombiner::AlphaCombiner CGXDefault<TevStageCombiner::AlphaCombiner>(int 
 	ac.op = TEVOP_ADD;
 	ac.bias = 0;
 	ac.shift = TEVSCALE_1;
-	ac.clamp = 1;
+	ac.clamp = 0;
 	ac.dest = GX_TEVPREV;
 	return ac;
 }

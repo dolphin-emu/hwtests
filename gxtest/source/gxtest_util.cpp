@@ -72,14 +72,6 @@ void Init()
 	GX_SetTexCopySrc(0, 0, 100, 100);
 	GX_SetTexCopyDst(100, 100, GX_TF_RGBA8, false);
 
-	/*	PE_CONTROL ctrl;
-	ctrl.hex = BPMEM_ZCOMPARE<<24;
-	ctrl.pixel_format = PIXELFMT_RGBA6_Z24;
-	ctrl.zformat = ZC_LINEAR;
-	ctrl.early_ztest = 0;
-	CGX_LOAD_BP_REG(ctrl.hex);*/
-
-
 	// We draw a dummy quad here to apply cached GX state...
 	// TODO: Implement proper GPU initialization in GX so that we don't need
 	// to do this anymore
@@ -132,6 +124,14 @@ void Init()
 	wgPipe->U32 = 0xFFFFFFFF;
 
 	GX_End();
+	GX_Flush();
+
+	PE_CONTROL ctrl;
+	ctrl.hex = BPMEM_ZCOMPARE<<24;
+	ctrl.pixel_format = PIXELFMT_RGBA6_Z24;
+	ctrl.zformat = ZC_LINEAR;
+	ctrl.early_ztest = 0;
+	CGX_LOAD_BP_REG(ctrl.hex);
 }
 
 void DebugDisplayEfbContents()
@@ -314,10 +314,11 @@ void CopyToTestBuffer(int left_most_pixel, int top_most_pixel, int right_most_pi
 }
 
 
-Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorCombiner& last_cc)
+Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorCombiner& last_cc, const TevStageCombiner::AlphaCombiner& last_ac)
 {
 	int previous_stage = ((last_cc.hex >> 24)-BPMEM_TEV_COLOR_ENV)>>1;
 	assert(previous_stage < 13);
+	assert(previous_stage == (((last_ac.hex >> 24)-BPMEM_TEV_ALPHA_ENV)>>1));
 
 	// The TEV output gets truncated to 8 bits when writing to the EFB.
 	// Hence, we cannot retrieve all 11 TEV output bits directly.
@@ -340,7 +341,12 @@ Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorComb
 	cc1.shift = TEVSCALE_4;
 	CGX_LOAD_BP_REG(cc1.hex);
 
-//	memset(test_buffer, 0, TEST_BUFFER_SIZE); // Just for debugging
+	auto ac1 = CGXDefault<TevStageCombiner::AlphaCombiner>(previous_stage+1);
+	ac1.a = last_ac.dest * 2;
+	ac1.shift = TEVSCALE_4;
+	CGX_LOAD_BP_REG(ac1.hex);
+
+	memset(test_buffer, 0, TEST_BUFFER_SIZE); // Just for debugging
 	Quad().AtDepth(1.0).ColorRGBA(255,255,255,255).Draw();
 	CGX_DoEfbCopyTex(0, 0, 100, 100, 0x6 /*RGBA8*/, false, test_buffer);
 	CGX_ForcePipelineFlush();
@@ -360,21 +366,35 @@ Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorComb
 
 	// The following tev stages are exclusively used to rightshift the
 	// upper bits such that they get written to the render target.
-
 	cc1 = CGXDefault<TevStageCombiner::ColorCombiner>(previous_stage+1);
 	cc1.d = last_cc.dest * 2;
 	cc1.shift = TEVDIVIDE_2;
 	CGX_LOAD_BP_REG(cc1.hex);
+
+	ac1 = CGXDefault<TevStageCombiner::AlphaCombiner>(previous_stage+1);
+	ac1.d = last_ac.dest * 2;
+	ac1.shift = TEVDIVIDE_2;
+	CGX_LOAD_BP_REG(ac1.hex);
 
 	cc1 = CGXDefault<TevStageCombiner::ColorCombiner>(previous_stage+2);
 	cc1.d = last_cc.dest * 2;
 	cc1.shift = TEVDIVIDE_2;
 	CGX_LOAD_BP_REG(cc1.hex);
 
+	ac1 = CGXDefault<TevStageCombiner::AlphaCombiner>(previous_stage+2);
+	ac1.d = last_ac.dest * 2;
+	ac1.shift = TEVDIVIDE_2;
+	CGX_LOAD_BP_REG(ac1.hex);
+
 	cc1 = CGXDefault<TevStageCombiner::ColorCombiner>(previous_stage+3);
 	cc1.d = last_cc.dest * 2;
 	cc1.shift = TEVDIVIDE_2;
 	CGX_LOAD_BP_REG(cc1.hex);
+
+	ac1 = CGXDefault<TevStageCombiner::AlphaCombiner>(previous_stage+3);
+	ac1.d = last_ac.dest * 2;
+	ac1.shift = TEVDIVIDE_2;
+	CGX_LOAD_BP_REG(ac1.hex);
 
 	memset(test_buffer, 0, TEST_BUFFER_SIZE);
 	Quad().AtDepth(1.0).ColorRGBA(255,255,255,255).Draw();
@@ -393,7 +413,6 @@ Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorComb
 	result.g = result1g + ((result2g & 0x10) ? (-0x400+((result2g&0xF)<<6)) : (result2g<<6));
 	result.b = result1b + ((result2b & 0x10) ? (-0x400+((result2b&0xF)<<6)) : (result2b<<6));
 	result.a = result1a + ((result2a & 0x10) ? (-0x400+((result2a&0xF)<<6)) : (result2a<<6));
-
 	return result;
 }
 

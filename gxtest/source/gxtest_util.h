@@ -61,10 +61,11 @@ void CopyToTestBuffer(int left_most_pixel, int top_most_pixel, int right_most_pi
 Vec4<u8> ReadTestBuffer(int x, int y, int previous_copy_width);
 
 // Read back output of the last tev stage (all 11 bits)
-// The BP register last_cc must have already been written before calling this function.
-// The function logic adds 3 additional tev stages
+// The BP registers last_cc and last_ac must have already been written before
+// calling this function. The function logic adds 3 additional tev stages,
+// so care must be taken not to enable more than 13 tev stages before usage.
 // NOTE: This will only work correctly if the EFB format is set to RGB8
-Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorCombiner& last_cc);
+Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorCombiner& last_cc, const TevStageCombiner::AlphaCombiner& last_ac);
 
 void DebugDisplayEfbContents();
 

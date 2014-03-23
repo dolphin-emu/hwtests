@@ -8,6 +8,8 @@
 #include <ogc/system.h>
 #include <ogc/cache.h>
 #include <ogc/gx.h>
+#include <ogc/irq.h>
+#include <ogc/machine/processor.h>
 
 #include "CommonTypes.h"
 #include "BPMemory.h"
@@ -38,6 +40,11 @@ extern "C"
 GXFifoObj* GX_Init(void* base, u32 size);
 }
 
+static void __CGXFinishInterruptHandler(u32 irq,void *ctx);
+static vu16* const _peReg = (u16*)0xCC001000;
+static lwpq_t _cgxwaitfinish;
+static vu32 _cgxfinished = 0;
+
 #define CGX_LOAD_BP_REG(x) \
 	do { \
 		wgPipe->U8 = 0x61; \
@@ -65,6 +72,12 @@ void CGX_Init()
     memset(gp_fifo, 0, 256*1024);
 
 	GX_Init(gp_fifo, 256*1024);
+
+	LWP_InitQueue(&_cgxwaitfinish);
+
+	IRQ_Request(IRQ_PI_PEFINISH,__CGXFinishInterruptHandler,NULL);
+	__UnmaskIrq(IRQMASK(IRQ_PI_PEFINISH));
+	_peReg[5] = 0x0F;
 }
 
 void CGX_SetViewport(float origin_x, float origin_y, float width, float height, float near, f32 far)
@@ -167,8 +180,6 @@ void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, u8 dest_format, 
 	reg.intensity_fmt = copy_to_intensity;
 	CGX_LOAD_BP_REG(reg.Hex);
 
-	// Really, no idea if it needs the PixModeSync call... DCFlushRange seems necessary though.
-	GX_PixModeSync();
     DCFlushRange(dest, GX_GetTexBufferSize(width,height,GX_TF_RGBA8,GX_FALSE,1));
 }
 
@@ -216,13 +227,27 @@ void CGX_ForcePipelineFlush()
 	wgPipe->U32 = 0;
 }
 
-// TODO: Get rid of GX usage!
-extern "C"
+static void __CGXFinishInterruptHandler(u32 irq,void *ctx)
 {
-void GX_DrawDone();
+	_peReg[5] = (_peReg[5]&~0x08)|0x08;
+	_cgxfinished = 1;
+
+	LWP_ThreadBroadcast(_cgxwaitfinish);
 }
 
 void CGX_WaitForGpuToFinish()
 {
-	GX_DrawDone();
+	u32 level;
+
+	_CPU_ISR_Disable(level);
+	CGX_LOAD_BP_REG(0x45000002); // draw done
+	CGX_ForcePipelineFlush();
+
+	_cgxfinished = 0;
+	_CPU_ISR_Flash(level);
+
+	while(!_cgxfinished)
+		LWP_ThreadSleep(_cgxwaitfinish);
+
+	_CPU_ISR_Restore(level);
 }
