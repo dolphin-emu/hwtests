@@ -2,6 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
+#include <initializer_list>
 #include "Test.h"
 #include <stdlib.h>
 #include <string.h>
@@ -353,7 +354,7 @@ void ClipTest()
 		case 3: // all vertices outside viewport, but within guardband and NOT on the same side of the viewport
 			test_quad.VertexTopLeft(-1.5f, 1.0f, 1.0f).VertexBottomLeft(-1.5f, -1.0f, 1.0f);
 			test_quad.VertexTopRight(1.5f, 1.0f, 1.0f).VertexBottomRight(1.5f, 1.0f, 1.0f);
-			test_x = 80; // TODO: MOve closer to actual viewport
+			test_x = 80; // TODO: Move closer to actual viewport
 			break;
 
 		case 4: // all vertices outside viewport and guardband, but NOT on the same side of the viewport
@@ -371,6 +372,7 @@ void ClipTest()
 			break;
 
 		case 6: // guardband-clipping test
+			// TODO: Currently broken
 			// Exceeds the guard-band clipping plane by the viewport width,
 			// so the primitive will get clipped such that one edge touches
 			// the clipping plane.exactly at the vertical viewport center.
@@ -413,6 +415,7 @@ void ClipTest()
 
 		case 11: // Very slightly behind z=w plane, depth clipping enabled
 		case 12: // Very slightly behind z=w plane, depth clipping disabled
+			// TODO: For whatever reason, this doesn't actually work, yet
 			// The GC/Wii GPU doesn't implement IEEE floats strictly, hence
 			// the sum of the projected position's z and w is a very small
 			// number, which by IEEE would be non-zero but which in fact is
@@ -465,6 +468,79 @@ void ClipTest()
 	END_TEST();
 }
 
+void CoordinatePrecisionTest()
+{
+	START_TEST();
+
+	CGX_SetViewport(100.0f, 100.0f, 200.0f, 200.0f, 0.0f, 1.0f);
+
+	CGX_LOAD_BP_REG(CGXDefault<TwoTevStageOrders>(0).hex);
+
+	CGX_BEGIN_LOAD_XF_REGS(0x1009, 1);
+	wgPipe->U32 = 1; // 1 color channel
+
+	LitChannel chan;
+	chan.hex = 0;
+	chan.matsource = 1; // from vertex
+	CGX_BEGIN_LOAD_XF_REGS(0x100e, 1); // color channel 1
+	wgPipe->U32 = chan.hex;
+	CGX_BEGIN_LOAD_XF_REGS(0x1010, 1); // alpha channel 1
+	wgPipe->U32 = chan.hex;
+
+	auto ac = CGXDefault<TevStageCombiner::AlphaCombiner>(0);
+	ac.d = TEVALPHAARG_RASA;
+	CGX_LOAD_BP_REG(ac.hex);
+
+	auto cc = CGXDefault<TevStageCombiner::ColorCombiner>(0);
+	cc.d = TEVCOLORARG_RASC;
+	CGX_LOAD_BP_REG(cc.hex);
+
+	// Test at which coordinates a pixel is considered to be within a primitive.
+	// Any coordinate bigger than -9.0416682e-1 (e.g. -9.0000, -9.0416676e-1) means the test pixel is not covered by the primitive
+	// TODO: Not sure how to interpret this result, yet.
+	// The important test values are the first two, the others are just to see how badly broken any inaccurate implementation actually is.
+	for (float xpos : {-0.90416682f, -0.90416676f, -0.90416670f, -0.90416600f,
+	                   -0.90416000f, -0.90410000f, -0.90400000f, -0.90420000f,
+	                   -0.90300000f, -0.90500000f, -0.90200000f, -0.90600000f,
+	                   -0.90100000f, -0.90700000f, -0.90000000f})
+	{
+		// first off, clear the full area.
+		GXTest::Quad().ColorRGBA(0,0,0,255).Draw();
+
+		// now, draw the actual testing quad.
+		GXTest::Quad().VertexTopLeft(xpos, 1.0, 1.0).VertexBottomLeft(xpos, -1.0, 1.0).ColorRGBA(255,0,255,255).Draw();
+		GXTest::CopyToTestBuffer(100, 100, 199, 199);
+		CGX_WaitForGpuToFinish();
+		GXTest::DebugDisplayEfbContents();
+
+		GXTest::Vec4<u8> result = GXTest::ReadTestBuffer(5, 5, 100);
+		u8 expectation = (xpos <= -9.0416682e-1f) ? 255 : 0;
+		float estimated_screencoord = xpos*50.f+150.f; // does not take into account rounding or anything like that
+		DO_TEST(result.r == expectation, "Incorrect rasterization (result=%d,expected=%d,xpos=%.8f,screencoord=%.6f)", result.r, expectation, xpos, estimated_screencoord);
+	}
+
+	// Guardband clipping indeed uses floating point math!
+	// Hence, the smallest floating point value smaller than -2.0 will yield a clipped primitive.
+	for (float xpos : {-2.0000000, -2.0000002})
+	{
+		// first off, clear the full area, including the guardband
+		GXTest::Quad().VertexTopLeft(-2.0, 2.0, 1.0).VertexBottomLeft(-2.0, -2.0, 1.0).VertexTopRight(2.0, 2.0, 1.0).VertexBottomRight(2.0, -2.0, 1.0).ColorRGBA(0,0,0,255).Draw();
+
+		// now, draw the actual testing quad such that all vertices are outside the viewport (and on the same side of the viewport)
+		// The two left vertices are at the border of the guardband; if they are outside the guardband, the primitive gets clipped away.
+		GXTest::Quad().VertexTopLeft(xpos, 1.0, 1.0).VertexBottomLeft(xpos, -1.0, 1.0).VertexTopRight(xpos+1.0, 1.0, 1.0).VertexBottomRight(xpos+1.0, -1.0, 1.0).ColorRGBA(255,0,255,255).Draw();
+		GXTest::CopyToTestBuffer(0, 100, 99, 199);
+		CGX_WaitForGpuToFinish();
+		GXTest::DebugDisplayEfbContents();
+
+		GXTest::Vec4<u8> result = GXTest::ReadTestBuffer(10, 5, 100);
+
+		int expectation = (xpos >= -2.0) ? 255 : 0;
+		DO_TEST(result.r == expectation, "Incorrect guardband clipping (result=%d,expected=%d,xpos=%.10f)", result.r, expectation, xpos);
+	};
+
+	END_TEST();
+}
 int main()
 {
 	network_init();
@@ -475,6 +551,7 @@ int main()
 	BitfieldTest();
 	TevCombinerTest();
 	ClipTest();
+	CoordinatePrecisionTest();
 
 	network_printf("Shutting down...\n");
 	network_shutdown();
