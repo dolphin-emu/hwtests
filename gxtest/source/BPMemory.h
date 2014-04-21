@@ -923,8 +923,6 @@ struct BPS_TmemConfig
 	u32 texinvalidate;
 };
 
-// All of BP memory
-
 
 struct BPCmd
 {
