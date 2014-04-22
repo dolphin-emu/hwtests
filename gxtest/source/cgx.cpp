@@ -83,12 +83,12 @@ void CGX_Init()
 void CGX_SetViewport(float origin_x, float origin_y, float width, float height, float near, f32 far)
 {
 	CGX_BEGIN_LOAD_XF_REGS(0x101a,6);
-	wgPipe->F32 = width*0.5;
-	wgPipe->F32 = -height*0.5;
-	wgPipe->F32 = (far-near)*16777215.0;
-	wgPipe->F32 = 342.0+origin_x+width*0.5;
-	wgPipe->F32 = 342.0+origin_y+height*0.5;
-	wgPipe->F32 = far*16777215.0;
+	wgPipe->F32 = width*0.5f;
+	wgPipe->F32 = -height*0.5f;
+	wgPipe->F32 = (far-near)*16777215.0f;
+	wgPipe->F32 = 342.0f+origin_x+width*0.5f;
+	wgPipe->F32 = 342.0f+origin_y+height*0.5f;
+	wgPipe->F32 = far*16777215.0f;
 }
 
 static inline void WriteMtxPS4x2(register f32 mt[3][4], register void* wgpipe)
@@ -178,6 +178,8 @@ void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, u8 dest_format, 
 	reg.half_scale = scale_down;
 	reg.clear = clear;
 	reg.intensity_fmt = copy_to_intensity;
+	reg.clamp0 = 1;
+	reg.clamp1 = 1;
 	CGX_LOAD_BP_REG(reg.Hex);
 
     DCFlushRange(dest, GX_GetTexBufferSize(width,height,GX_TF_RGBA8,GX_FALSE,1));

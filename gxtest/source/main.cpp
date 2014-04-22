@@ -6,10 +6,12 @@
 #include "Test.h"
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <wiiuse/wpad.h>
 #include "cgx.h"
 #include "cgx_defaults.h"
 #include "gxtest_util.h"
+#include <ogcsys.h>
 
 void BitfieldTest()
 {
@@ -472,8 +474,6 @@ void CoordinatePrecisionTest()
 {
 	START_TEST();
 
-	CGX_SetViewport(0.0f, 0.0f, 100.0f, 100.0f, 0.0f, 1.0f);
-
 	CGX_LOAD_BP_REG(CGXDefault<TwoTevStageOrders>(0).hex);
 
 	CGX_BEGIN_LOAD_XF_REGS(0x1009, 1);
@@ -497,83 +497,66 @@ void CoordinatePrecisionTest()
 
 	// Test at which coordinates a pixel is considered to be within a primitive.
 	// TODO: Not sure how to interpret the results, yet.
-	// NOTE: Tests for the values -0.08833329, -0.08833328, 0.01166687, 0.03166687, 0.05166687, 0.9166688 still fail.
-	int index = 0;
-	for (float xpos : {-0.98833334f, -0.96833336f, -0.94833338f, -0.92833334f,
-	                   -0.90833336f, -0.88833338f, -0.86833340f, -0.84833336f,
-	                   -0.82833338f, -0.80833340f, -0.78833336f, -0.76833338f,
-	                   -0.74833339f, -0.72833335f, -0.70833337f, -0.68833339f,
-	                   -0.66833335f, -0.64833337f, -0.62833339f, -0.60833335f,
-	                   -0.58833337f, -0.56833339f, -0.54833335f, -0.52833337f,
-	                   -0.50833338f, -0.48833331f, -0.46833333f, -0.44833332f,
-	                   -0.42833331f, -0.40833333f, -0.38833332f, -0.36833334f,
-	                   -0.34833333f, -0.32833332f, -0.30833334f, -0.28833333f,
-	                   -0.26833332f, -0.24833331f, -0.22833331f, -0.20833330f,
-	                   -0.18833330f, -0.16833331f, -0.14833331f, -0.12833330f,
-	                   -0.10833330f, -0.08833329f, -0.06833329f, -0.04833329f,
-	                   -0.02833329f, -0.00833328f, 0.01166687f, 0.03166687f,
-	                   0.05166687f, 0.07166687f, 0.09166688f, 0.11166687f,
-	                   0.13166688f, 0.15166688f, 0.17166688f, 0.19166687f,
-	                   0.21166688f, 0.23166688f, 0.25166687f, 0.27166688f,
-	                   0.29166690f, 0.31166688f, 0.33166689f, 0.35166690f,
-	                   0.37166688f, 0.39166689f, 0.41166687f, 0.43166688f,
-	                   0.45166689f, 0.47166687f, 0.49166688f, 0.51166689f,
-	                   0.53166687f, 0.55166692f, 0.57166690f, 0.59166688f,
-	                   0.61166692f, 0.63166690f, 0.65166688f, 0.67166692f,
-	                   0.69166690f, 0.71166688f, 0.73166692f, 0.75166690f,
-	                   0.77166688f, 0.79166692f, 0.81166691f, 0.83166689f,
-	                   0.85166693f, 0.87166691f, 0.89166689f, 0.91166687f,
-	                   0.93166691f, 0.95166689f, 0.97166687f, 0.99166691f,
-	                   // For any of the values below, the pixel should be considered outside the primitive
-	                   // These are the closest representable 32 bit floating point numbers to the above ones
-	                   -0.98833328f, -0.96833330f, -0.94833332f, -0.92833328f,
-	                   -0.90833330f, -0.88833332f, -0.86833334f, -0.84833330f,
-	                   -0.82833332f, -0.80833334f, -0.78833330f, -0.76833332f,
-	                   -0.74833333f, -0.72833329f, -0.70833331f, -0.68833333f,
-	                   -0.66833329f, -0.64833331f, -0.62833333f, -0.60833329f,
-	                   -0.58833331f, -0.56833333f, -0.54833329f, -0.52833331f,
-	                   -0.50833333f, -0.48833328f, -0.46833330f, -0.44833329f,
-	                   -0.42833328f, -0.40833330f, -0.38833329f, -0.36833331f,
-	                   -0.34833330f, -0.32833329f, -0.30833331f, -0.28833330f,
-	                   -0.26833329f, -0.24833329f, -0.22833329f, -0.20833328f,
-	                   -0.18833329f, -0.16833329f, -0.14833330f, -0.12833329f,
-	                   -0.10833329f, -0.08833329f, -0.06833328f, -0.04833328f,
-	                   -0.02833328f, -0.00833328f, 0.01166687f, 0.03166687f,
-	                   0.05166687f, 0.07166688f, 0.09166688f, 0.11166688f,
-	                   0.13166690f, 0.15166689f, 0.17166689f, 0.19166689f,
-	                   0.21166690f, 0.23166689f, 0.25166690f, 0.27166691f,
-	                   0.29166692f, 0.31166691f, 0.33166692f, 0.35166693f,
-	                   0.37166691f, 0.39166692f, 0.41166690f, 0.43166691f,
-	                   0.45166692f, 0.47166690f, 0.49166691f, 0.51166695f,
-	                   0.53166693f, 0.55166698f, 0.57166696f, 0.59166694f,
-	                   0.61166698f, 0.63166696f, 0.65166694f, 0.67166698f,
-	                   0.69166696f, 0.71166694f, 0.73166698f, 0.75166696f,
-	                   0.77166694f, 0.79166698f, 0.81166697f, 0.83166695f,
-	                   0.85166699f, 0.87166697f, 0.89166695f, 0.91166693f,
-	                   0.93166697f, 0.95166695f, 0.97166693f, 0.99166697f})
+	for (float xpos = 0.583328247070f; xpos <= 0.583328306675f; xpos = nextafterf(xpos,+1.0f))
 	{
+		CGX_SetViewport(xpos, 0.0f, 100.0f, 100.0f, 0.0f, 1.0f);
+
 		// first off, clear the full area.
 		GXTest::Quad().VertexTopLeft(-2.0, 2.0, 1.0).VertexBottomLeft(-2.0, -2.0, 1.0).VertexTopRight(2.0, 2.0, 1.0).VertexBottomRight(2.0, -2.0, 1.0).ColorRGBA(0,0,0,255).Draw();
 		GXTest::Quad().ColorRGBA(0,255,0,255).Draw();
 
 		// now, draw the actual testing quad.
-		GXTest::Quad().VertexTopLeft(xpos, 1.0, 1.0).VertexBottomLeft(xpos, -1.0, 1.0).ColorRGBA(255,0,255,255).Draw();
+		GXTest::Quad().VertexTopLeft(0, 1.0, 1.0).VertexBottomLeft(0, -1.0, 1.0).ColorRGBA(255,0,255,255).Draw();
+		GXTest::CopyToTestBuffer(50, 0, 127, 127);
+		CGX_WaitForGpuToFinish();
+		GXTest::DebugDisplayEfbContents();
+
+		GXTest::Vec4<u8> result = GXTest::ReadTestBuffer(0, 0, 128);
+		u8 expectation = (xpos <= 0.583328247070f) ? 255 : 0;
+		int subsample_index = (int)(xpos * 12.0f) % 12;
+		DO_TEST(result.r == expectation, "Incorrect rasterization (result=%d,expected=%d,screencoord=%.6f,subsample_index=%d)", result.r, expectation, xpos, subsample_index);
+	}
+
+	// Test for the default pixel subsample location by creating tiny viewports (smaller than the pixel width)
+	// By drawing a quad over the whole viewport, we can check if the current viewport spans the subsample location.
+	// The results seem to indicate that the default subsample is located close to (but somewhat off) screen position 7/12.
+	// I (neobrain) am not sure if the sample indeed is not at that location or if it's just due to floating point rounding errors.
+	for (float xpos = 0.583297669888f; xpos <= 0.583328306675; xpos = nextafterf(xpos,+1.0f))
+	{
+		CGX_SetViewport(0.0, 0.0f, 100.0f, 100.0f, 0.0f, 1.0f);
+
+		// first off, clear the full area.
+		GXTest::Quad().VertexTopLeft(-2.0, 2.0, 1.0).VertexBottomLeft(-2.0, -2.0, 1.0).VertexTopRight(2.0, 2.0, 1.0).VertexBottomRight(2.0, -2.0, 1.0).ColorRGBA(0,0,0,255).Draw();
+		GXTest::Quad().ColorRGBA(0,255,0,255).Draw();
+
+		// manual viewport setting to make sure we aren't limited (too much) by floating point precision
+		// 2.0e-5 seems to be the smallest possible viewport width which behaves sane.
+		// For this size, values of xpos from 0.583297729492 to 0.583328247070 will yield a covered pixel
+		float vp_width = 2.0e-5f;
+		CGX_BEGIN_LOAD_XF_REGS(0x101a,6);
+		wgPipe->F32 = vp_width;
+		wgPipe->F32 = -50.0f;
+		wgPipe->F32 = 16777215.0f;
+		wgPipe->F32 = 342.0f+xpos+vp_width;
+		wgPipe->F32 = 392.0f;
+		wgPipe->F32 = 16777215.0f;
+
+		// now, draw the actual testing quad.
+		GXTest::Quad().ColorRGBA(255,0,255,255).Draw();
 		GXTest::CopyToTestBuffer(0, 0, 127, 127);
 		CGX_WaitForGpuToFinish();
 		GXTest::DebugDisplayEfbContents();
 
-		GXTest::Vec4<u8> result = GXTest::ReadTestBuffer(index%100, 0, 128);
-		u8 expectation = (index < 100) ? 255 : 0;
-		float estimated_screencoord = xpos*50.f+50.f; // does not take into account rounding or anything like that
-		DO_TEST(result.r == expectation, "Incorrect rasterization (result=%d,expected=%d,xpos=%.8f,screencoord=%.6f)", result.r, expectation, xpos, estimated_screencoord);
-
-		++index;
+		GXTest::Vec4<u8> result = GXTest::ReadTestBuffer(0, 0, 128);
+		u8 expectation = (xpos == 0.583297669888f || xpos == 0.583328306675f) ? 0 : 255;
+		int subsample_index = (int)(xpos * 12.0f) % 12;
+		DO_TEST(result.r == expectation, "Incorrect rasterization (result=%d,expected=%d,screencoord=%.12f,subsample_index=%d)", result.r, expectation, xpos, subsample_index);
 	}
 
 	// Guardband clipping indeed uses floating point math!
 	// Hence, the smallest floating point value smaller than -2.0 will yield a clipped primitive.
 	CGX_SetViewport(100.0f, 100.0f, 100.0f, 100.0f, 0.0f, 1.0f);
-	for (float xpos : {-2.0000000, -2.0000002})
+	for (float xpos : {-2.0000000f, nextafterf(-2.0f, -1.0f)})
 	{
 		// first off, clear the full area, including the guardband
 		GXTest::Quad().VertexTopLeft(-2.0, 2.0, 1.0).VertexBottomLeft(-2.0, -2.0, 1.0).VertexTopRight(2.0, 2.0, 1.0).VertexBottomRight(2.0, -2.0, 1.0).ColorRGBA(0,0,0,255).Draw();
