@@ -609,6 +609,10 @@ void LightingTest()
 	ctrl.early_ztest = 0;
 	CGX_LOAD_BP_REG(ctrl.hex);
 
+	// Test to check how the hardware rounds the final computation of the
+	// lit color of a vertex.  The formula is basically just
+	// (material color * lighting color), but the rounding isn't obvious
+	// because the hardware uses fixed-point math and takes some shortcuts.
 	for (int step = 0; step < 256*256; ++step)
 	{
 		int matcolor = step & 255;
