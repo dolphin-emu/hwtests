@@ -775,6 +775,38 @@ void KonstTest()
 		GXTest::DebugDisplayEfbContents();
 	}
 
+	// Test the behavior of TEVCOLORARG_HALF.
+	{
+		auto genmode = CGXDefault<GenMode>();
+		genmode.numtevstages = 0; // One stage
+		CGX_LOAD_BP_REG(genmode.hex);
+
+		auto zmode = CGXDefault<ZMode>();
+		CGX_LOAD_BP_REG(zmode.hex);
+
+		int test_x = 125, test_y = 25; // Somewhere within the viewport
+
+		// First stage pulls in konst values.
+		CGX_SetViewport(0.0f, 0.0f, 201.0f, 50.0f, 0.0f, 1.0f);
+		auto cc0 = CGXDefault<TevStageCombiner::ColorCombiner>(0);
+		cc0.d = TEVCOLORARG_HALF;
+		CGX_LOAD_BP_REG(cc0.hex);
+		auto ac0 = CGXDefault<TevStageCombiner::AlphaCombiner>(0);
+		ac0.d = TEVALPHAARG_ZERO;
+		CGX_LOAD_BP_REG(ac0.hex);
+
+		GXTest::Quad().ColorRGBA(0, 0, 0, 0xff).Draw();
+
+		GXTest::CopyToTestBuffer(0, 0, 199, 49);
+		CGX_WaitForGpuToFinish();
+
+		GXTest::Vec4<u8> result = GXTest::ReadTestBuffer(test_x, test_y, 200);
+
+		DO_TEST(result.r == 128, "TEVCOLORARG_HALF test failed; actual %d", result.r);
+
+		GXTest::DebugDisplayEfbContents();
+	}
+
 	END_TEST();
 }
 
