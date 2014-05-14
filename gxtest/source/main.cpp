@@ -658,6 +658,126 @@ void LightingTest()
 	END_TEST();
 }
 
+void KonstTest()
+{
+	START_TEST();
+
+	CGX_LOAD_BP_REG(CGXDefault<TwoTevStageOrders>(0).hex);
+
+	CGX_BEGIN_LOAD_XF_REGS(0x1009, 1);
+	wgPipe->U32 = 1; // 1 color channel
+
+	LitChannel chan;
+	chan.hex = 0;
+	chan.matsource = 0; // from register
+	chan.ambsource = 0; // from register
+	chan.enablelighting = false;
+	CGX_BEGIN_LOAD_XF_REGS(0x100e, 1); // color channel 1
+	wgPipe->U32 = chan.hex;
+	CGX_BEGIN_LOAD_XF_REGS(0x1010, 1); // alpha channel 1
+	wgPipe->U32 = chan.hex;
+
+	auto genmode = CGXDefault<GenMode>();
+	genmode.numtevstages = 1; // Two stages
+	CGX_LOAD_BP_REG(genmode.hex);
+
+	PE_CONTROL ctrl;
+	ctrl.hex = BPMEM_ZCOMPARE << 24;
+	ctrl.pixel_format = PIXELFMT_RGB8_Z24;
+	ctrl.zformat = ZC_LINEAR;
+	ctrl.early_ztest = 0;
+	CGX_LOAD_BP_REG(ctrl.hex);
+
+	CGX_BEGIN_LOAD_XF_REGS(0x1005, 1);
+	wgPipe->U32 = 0; // 0 = enable clipping, 1 = disable clipping
+
+	// Set up "konst" colors with recognizable values.
+	for (int i = 0; i < 4; ++i)
+	{
+		auto tevreg = CGXDefault<TevReg>(i, true);
+		tevreg.red = 10 + 50 * i;
+		tevreg.green = 20 + 50 * i;
+		tevreg.blue = 30 + 50 * i;
+		tevreg.alpha = 40 + 50 * i;
+		CGX_LOAD_BP_REG(tevreg.low);
+		CGX_LOAD_BP_REG(tevreg.high);
+	}
+
+	// Make sure blending is set appropriately (no blending).
+	BlendMode bm;
+	bm.hex = (BPMEM_BLENDMODE << 24);
+	bm.blendenable = 0;
+	bm.logicopenable = 0;
+	bm.dither = 1;
+	bm.colorupdate = 1;
+	bm.alphaupdate = 1;
+	bm.dstfactor = GX_BL_INVSRCALPHA;
+	bm.srcfactor = GX_BL_SRCALPHA;
+	bm.subtract = 0;
+	bm.logicmode = 0;
+	CGX_LOAD_BP_REG(bm.hex);
+
+	// Test for values returned for "konst" TEV inputs.  Goes through
+	// all the possible values for kasel and kcsel.
+	for (int step = 0; step < 64; ++step)
+	{
+		auto zmode = CGXDefault<ZMode>();
+		CGX_LOAD_BP_REG(zmode.hex);
+
+		int test_x = 125, test_y = 25; // Somewhere within the viewport
+
+		// First stage pulls in konst values.
+		CGX_SetViewport(0.0f, 0.0f, 201.0f, 50.0f, 0.0f, 1.0f);
+		auto cc0 = CGXDefault<TevStageCombiner::ColorCombiner>(0);
+		cc0.d = TEVCOLORARG_KONST;
+		CGX_LOAD_BP_REG(cc0.hex);
+		auto ac0 = CGXDefault<TevStageCombiner::AlphaCombiner>(0);
+		ac0.d = TEVALPHAARG_KONST;
+		CGX_LOAD_BP_REG(ac0.hex);
+
+		// Second stage makes sure the output is always in the red channel.
+		auto cc1 = CGXDefault<TevStageCombiner::ColorCombiner>(1);
+		cc1.d = step < 32 ? TEVCOLORARG_CPREV : TEVCOLORARG_APREV;
+		CGX_LOAD_BP_REG(cc1.hex);
+		auto ac1 = CGXDefault<TevStageCombiner::AlphaCombiner>(1);
+		ac1.d = TEVALPHAARG_ZERO;
+		CGX_LOAD_BP_REG(ac1.hex);
+
+		TevKSel sel;
+		sel.hex = BPMEM_TEV_KSEL << 24;
+		sel.swap1 = 0;
+		sel.swap2 = 0;
+		sel.kcsel0 = step < 32 ? step : 0;
+		sel.kcsel1 = 0;
+		sel.kasel0 = step >= 32 ? step : 0;
+		sel.kasel1 = 0;
+		CGX_LOAD_BP_REG(sel.hex);
+
+		GXTest::Quad().ColorRGBA(0, 0, 0, 0xff).Draw();
+
+		GXTest::CopyToTestBuffer(0, 0, 199, 49);
+		CGX_WaitForGpuToFinish();
+
+		GXTest::Vec4<u8> result = GXTest::ReadTestBuffer(test_x, test_y, 200);
+		int expected[] = {
+			255, 223, 191, 159, 128,  96,  64,  32,
+			  0,   0,   0,   0,  10,  60, 110, 160,
+			 10,  60, 110, 160,  20,  70, 120, 170,
+			 30,  80, 130, 180,  40,  90, 140, 190,
+			255, 223, 191, 159, 128,  96,  64,  32,
+			  0,   0,   0,   0,   0,   0,   0,   0,
+			 10,  60, 110, 160,  20,  70, 120, 170,
+			 30,  80, 130, 180,  40,  90, 140, 190,
+		};
+
+		DO_TEST(expected[step] == result.r, "konst test failed; actual %d, expected %d", result.r, expected[step]);
+
+		GXTest::DebugDisplayEfbContents();
+	}
+
+	END_TEST();
+}
+
 int main()
 {
 	network_init();
@@ -670,6 +790,7 @@ int main()
 	ClipTest();
 	CoordinatePrecisionTest();
 	LightingTest();
+	KonstTest();
 
 	network_printf("Shutting down...\n");
 	network_shutdown();
