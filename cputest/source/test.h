@@ -11,7 +11,7 @@
 #define SERVER_PORT 16784
 
 #define START_TEST() privStartTest(__FILE__, __LINE__)
-#define DO_TEST(condition, fail_msg, ...) privDoTest(condition, __FILE__, __LINE__, fail_msg, __VA_ARGS__)
+#define DO_TEST(condition, fail_msg, ...) privDoTest(condition, __FILE__, __LINE__, fail_msg, ##__VA_ARGS__)
 #define END_TEST() privEndTest()
 #define SIMPLE_TEST()
 
