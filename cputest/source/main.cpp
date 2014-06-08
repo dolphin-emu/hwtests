@@ -7,6 +7,8 @@
 
 #include "test.h"
 
+
+void FctiwzTest();
 void ReciprocalTest();
 
 int main()
@@ -14,6 +16,7 @@ int main()
 	network_init();
 	WPAD_Init();
 
+	FctiwzTest();
 	ReciprocalTest();
 
 	network_printf("Shutting down...\n");
