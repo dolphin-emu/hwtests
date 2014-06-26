@@ -155,7 +155,7 @@ fres_intrinsic(double val)
 	return estimate;
 }
 
-void ReciprocalTest()
+static void ReciprocalTest()
 {
 	START_TEST();
 
@@ -192,3 +192,17 @@ void ReciprocalTest()
 	}
 	END_TEST();
 }
+
+int main()
+{
+	network_init();
+	WPAD_Init();
+
+	ReciprocalTest();
+
+	network_printf("Shutting down...\n");
+	network_shutdown();
+
+	return 0;
+}
+

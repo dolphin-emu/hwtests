@@ -16,5 +16,10 @@ set(MACHDEP "-DGEKKO -mrvl -mcpu=750 -meabi -mhard-float")
 set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} ${MACHDEP}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MACHDEP}")
 
+function(add_hwtest module testname filelist)
+    add_executable(${module}_${testname} ${filelist} ${COMMON_CODE})
+    target_link_libraries(${module}_${testname} wiiuse bte fat ogc m)
+endfunction()
+
 add_subdirectory(cputest)
 add_subdirectory(gxtest)

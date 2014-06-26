@@ -1,6 +1,7 @@
+#include <wiiuse/wpad.h>
 #include "test.h"
 
-void FctiwzTest()
+static void FctiwzTest()
 {
 	START_TEST();
 	u64 values[][2] = {
@@ -29,4 +30,17 @@ void FctiwzTest()
 		                            "expected 0x%016llx", input, result, expected);
 	}
 	END_TEST();
+}
+
+int main()
+{
+	network_init();
+	WPAD_Init();
+
+	FctiwzTest();
+
+	network_printf("Shutting down...\n");
+	network_shutdown();
+
+	return 0;
 }

@@ -1,2 +1,5 @@
-add_executable(cputest source/fctiwz.cpp source/main.cpp source/reciprocal.cpp source/test.cpp)
-target_link_libraries(cputest wiiuse bte fat ogc m)
+set(COMMON_CODE
+                source/test.cpp)
+
+add_hwtest(cputest fctiwz     source/fctiwz.cpp)
+add_hwtest(cputest reciprocal source/reciprocal.cpp)
