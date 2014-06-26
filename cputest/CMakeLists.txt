@@ -1,5 +1,5 @@
 set(COMMON_CODE
-                source/test.cpp)
+                test.cpp)
 
-add_hwtest(cputest fctiwz     source/fctiwz.cpp)
-add_hwtest(cputest reciprocal source/reciprocal.cpp)
+add_hwtest(cputest fctiwz     fctiwz.cpp)
+add_hwtest(cputest reciprocal reciprocal.cpp)
