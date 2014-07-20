@@ -15,7 +15,7 @@ To use the run_* CMake targets:
 
 ## Usage:
 
-To build all tests, call `./build.sh` from the root directory.
+To build all tests, call `./build.sh` from the root directory. (Set the MAKEFLAGS environment variable to build in parallel.)
 
 Tests are run by sending their ELFs one-by-one over the network to a Wii running the Homebrew Channel. To do this, call `make run_$NAMEOFTEST` from the build directory.
 
