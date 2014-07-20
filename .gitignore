@@ -1,4 +1,1 @@
-cputest/build/
-gxtest/build/
-*.dol
-*.elf
+build/

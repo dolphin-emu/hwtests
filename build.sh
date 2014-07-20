@@ -1,8 +1,6 @@
-if [ ! -d build ]; then
-	mkdir build
-fi
+#!/bin/sh
 
+mkdir -p build
 cd build
 cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain-powerpc.cmake ..
-make -j2
-cd ..
+make
