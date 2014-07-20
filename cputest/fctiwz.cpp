@@ -1,6 +1,8 @@
+#include <gctypes.h>
 #include <wiiuse/wpad.h>
 #include "test.h"
 
+// Float Convert To Integer Word with round-to-Zero
 static void FctiwzTest()
 {
 	START_TEST();
