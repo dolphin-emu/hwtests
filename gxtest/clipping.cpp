@@ -43,7 +43,7 @@ void ClipTest()
 	ctrl.early_ztest = 0;
 	CGX_LOAD_BP_REG(ctrl.hex);
 
-	for (int step = 0; step < 13; ++step)
+	for (int step = 0; step < 16; ++step)
 	{
 		auto zmode = CGXDefault<ZMode>();
 		CGX_LOAD_BP_REG(zmode.hex);
@@ -190,8 +190,9 @@ void ClipTest()
 
 			test_quad.VertexTopLeft(-1.0f, 1.0f, 1.5f);
 
-			// whole primitive gets clipped away
-			expect_quad_to_be_drawn = false;
+			// whole primitive gets clipped away if depth clipping is enabled.
+			// Otherwise the whole primitive is drawn.
+			expect_quad_to_be_drawn = step - 13;
 			break;
 
 		case 15:  // Three vertices with a very large value for z, depth clipping disabled
