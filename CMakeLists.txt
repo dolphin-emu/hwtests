@@ -18,11 +18,14 @@ add_custom_target(run)
 
 function(add_hwtest module testname filelist)
     add_executable(${module}_${testname} ${filelist} ${COMMON_CODE})
-    target_link_libraries(${module}_${testname} wiiuse bte fat ogc m)
+    target_link_libraries(${module}_${testname} hwtests_common wiiuse bte fat ogc m)
     add_custom_target(run_${module}_${testname} sh ${CMAKE_SOURCE_DIR}/run.sh ${module}_${testname})
     add_dependencies(run_${module}_${testname} ${module}_${testname})
     add_dependencies(run run_${module}_${testname})
 endfunction()
 
+include_directories(common)
+
+add_subdirectory(common)
 add_subdirectory(cputest)
 add_subdirectory(gxtest)

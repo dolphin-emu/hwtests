@@ -1,6 +1,6 @@
 #include <gctypes.h>
 #include <wiiuse/wpad.h>
-#include "test.h"
+#include "hwtests.h"
 
 // Check what the Broadway does if we set reserved bits in the graphics quantization registers. The
 // CPU manual marks these as zero, but this isn't actually true.

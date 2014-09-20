@@ -3,7 +3,7 @@
 // Refer to the license.txt file included.
 
 #include <initializer_list>
-#include "Test.h"
+#include "hwtests.h"
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>

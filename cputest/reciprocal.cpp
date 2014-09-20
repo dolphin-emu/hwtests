@@ -10,7 +10,7 @@
 #include <ppu_intrinsics.h>
 #include <wiiuse/wpad.h>
 
-#include "test.h"
+#include "hwtests.h"
 
 static double fres_expected(double val)
 {
