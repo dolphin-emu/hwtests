@@ -13,6 +13,7 @@ set(MACHDEP "-DGEKKO -mrvl -mcpu=750 -meabi -mhard-float")
 
 set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} ${MACHDEP}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MACHDEP}")
+set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 
 add_custom_target(run)
 
