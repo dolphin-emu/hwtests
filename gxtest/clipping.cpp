@@ -43,7 +43,7 @@ void ClipTest()
 	ctrl.early_ztest = 0;
 	CGX_LOAD_BP_REG(ctrl.hex);
 
-	for (int step = 0; step < 16; ++step)
+	for (int step = 0; step < 22; ++step)
 	{
 		auto zmode = CGXDefault<ZMode>();
 		CGX_LOAD_BP_REG(zmode.hex);
@@ -203,6 +203,49 @@ void ClipTest()
 			test_quad.VertexTopRight(1.0f, 1.0f, 65537.f);
 			test_quad.VertexBottomLeft(-1.0f, -1.0f, 65537.f);
 			break;
+
+		case 16:
+		case 17:
+		case 18:
+		case 19:
+		case 20:
+		case 21:
+		{
+			// Test depth clipping precision using values from a real game.
+			// Orthographic projection near plane at approximately 1.0+epsilon, far plane 100.000000-epsilon.
+			// Observed behavior on hardware diverges from expected result if Zc was calculated following IEEE standard.
+
+			CGX_BEGIN_LOAD_XF_REGS(0x1005, 1);
+			wgPipe->U32 = 0; // 0 = enable clipping, 1 = disable clipping
+
+			float depthClipNear = 1.00000012f; // 0x3f800001
+			float depthClipFar = 99.99999237f; // 0x42c7ffff
+			float depthScale = -1.0f * (1.0f / (depthClipFar - depthClipNear)); // projection matrix row 3 column 3, -0.01010101 (0xbc257eb6)
+			float depthBias = -depthClipFar * (1.0f / (depthClipFar - depthClipNear)); // projection matrix row 3 column 4, -1.01010108 (0xbf814afe)
+
+			struct {
+				bool expectDrawn;
+				float depth;
+			} test_cases[6] = {          // Z as hex   | IEEE Z*m33  |  IEEE Zc     | expected | observed
+				{true,  -depthClipNear}, // 0xbf800001 | 0.010101012 | -1.000000119 | clipped  | drawn
+				{true,  -1.0f},          // 0xbf800000 | 0.010101011 | -1.000000119 | clipped  | drawn
+				{true,  -0.99999797f},   // 0xbf7fffde | 0.010100991 | -1.000000119 | clipped  | drawn
+				{false, -0.99999791f},   // 0xbf7fffdd | 0.010100990 | -1.000000119 | clipped  | clipped
+				{true,  -depthClipFar},  // 0xc2c7ffff | 1.010101080 |  0.000000000 | drawn    | drawn
+				{false, -100.0f},        // 0xc2c80000 | 1.010101080 |  0.000000000 | drawn    | clipped
+			};
+
+			int id = step-16;
+
+			test_quad = GXTest::Quad()
+				.AtDepth(test_cases[id].depth)
+				.ZScaleBias(depthScale, depthBias)
+				.ColorRGBA(0xff, 0xff, 0xff, 0xff);
+
+			expect_quad_to_be_drawn = test_cases[id].expectDrawn;
+
+			break;
+		}
 
 		// TODO: One vertex with z < 0, depth clipping enabled, primitive gets properly (!) clipped
 		// TODO: One vertex with z < 0, depth clipping disabled, whole primitive gets drawn

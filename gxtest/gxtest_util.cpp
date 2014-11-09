@@ -191,6 +191,9 @@ Quad::Quad()
 	y[3] = -1.0;
 	z[3] =  1.0;
 
+	z_scale = -1.0f;
+	z_bias = 0.0f;
+
 	has_color = false;
 }
 
@@ -229,6 +232,14 @@ Quad& Quad::VertexBottomLeft(f32 x, f32 y, f32 z)
 Quad& Quad::AtDepth(f32 depth)
 {
 	z[0] = z[1] = z[2] = z[3] = depth;
+
+	return *this;
+}
+
+Quad& Quad::ZScaleBias(f32 scale, f32 bias)
+{
+	z_scale = scale;
+	z_bias = bias;
 
 	return *this;
 }
@@ -287,7 +298,8 @@ void Quad::Draw()
 	memset(mtx, 0, sizeof(mtx));
 	mtx[0][0] = 1;
 	mtx[1][1] = 1;
-	mtx[2][2] = -1;
+	mtx[2][2] = z_scale;
+	mtx[2][3] = z_bias;
 	CGX_LoadProjectionMatrixOrthographic(mtx);
 
 	wgPipe->U8 = 0x80; // draw quads
