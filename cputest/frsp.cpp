@@ -19,7 +19,7 @@ static void FrspTest()
       {0x3810000000000000, 0x3810000000000000, 0b100},  // smallest positive single normal
       {0x7ff0000000000000, 0x7ff0000000000000, 0b000},  // +infinity
       {0xfff0000000000000, 0xfff0000000000000, 0b000},  // -infinity
-      {0xfff7ffffffffffff, 0xfff7ffffe0000000, 0b000},  // a SNaN
+      {0xfff7ffffffffffff, 0xffffffffe0000000, 0b000},  // a SNaN
       {0xffffffffffffffff, 0xffffffffe0000000, 0b000},  // a QNaN
   };
   for (size_t i = 0; i < sizeof(values) / sizeof(values[0]); i++)
