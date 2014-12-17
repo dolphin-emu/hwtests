@@ -15,8 +15,12 @@ static void FrspTest()
       {0x000fffffffffffff, 0x0000000000000000, 0b000},  // largest double subnormal
       {0x3690000000000000, 0x0000000000000000, 0b000},  // largest number rounded to zero
       {0x3690000000000001, 0x36a0000000000000, 0b000},  // smallest positive single subnormal
+      {0x380ffffff0000000, 0x0000000000000000, 0b100},  // boundary of architecture-dependent behavior in non-IEEE mode
       {0x380fffffffffffff, 0x0000000000000000, 0b100},  // largest single subnormal
       {0x3810000000000000, 0x3810000000000000, 0b100},  // smallest positive single normal
+      {0xb80ffffff0000000, 0x8000000000000000, 0b100},  // boundary of architecture-dependent behavior in non-IEEE mode
+      {0xb80fffffffffffff, 0x8000000000000000, 0b100},  // smallest single subnormal
+      {0xb810000000000000, 0xb810000000000000, 0b100},  // largest negative single normal
       {0x7ff0000000000000, 0x7ff0000000000000, 0b000},  // +infinity
       {0xfff0000000000000, 0xfff0000000000000, 0b000},  // -infinity
       {0xfff7ffffffffffff, 0xffffffffe0000000, 0b000},  // a SNaN
