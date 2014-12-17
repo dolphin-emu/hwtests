@@ -15,9 +15,11 @@ static void FrspTest()
       {0x000fffffffffffff, 0x0000000000000000, 0b000},  // largest double subnormal
       {0x3690000000000000, 0x0000000000000000, 0b000},  // largest number rounded to zero
       {0x3690000000000001, 0x36a0000000000000, 0b000},  // smallest positive single subnormal
+      {0x380fffffe0000001, 0x0000000000000000, 0b110},  // boundary of architecture-dependent behavior in non-IEEE mode
       {0x380ffffff0000000, 0x0000000000000000, 0b100},  // boundary of architecture-dependent behavior in non-IEEE mode
       {0x380fffffffffffff, 0x0000000000000000, 0b100},  // largest single subnormal
       {0x3810000000000000, 0x3810000000000000, 0b100},  // smallest positive single normal
+      {0xb80fffffe0000001, 0x8000000000000000, 0b111},  // boundary of architecture-dependent behavior in non-IEEE mode
       {0xb80ffffff0000000, 0x8000000000000000, 0b100},  // boundary of architecture-dependent behavior in non-IEEE mode
       {0xb80fffffffffffff, 0x8000000000000000, 0b100},  // smallest single subnormal
       {0xb810000000000000, 0xb810000000000000, 0b100},  // largest negative single normal
@@ -35,10 +37,10 @@ static void FrspTest()
     u64 expected = values[i][1];
     u64 result = 0;
     asm("frsp %0, %1" : "=d"(result) : "d"(input));
-    DO_TEST(result == expected, "frsp(0x{:016x}, NI={}):\n"
+    DO_TEST(result == expected, "frsp(0x{:016x}, NI={}, RN={}):\n"
                                 "     got 0x{:016x}\n"
                                 "expected 0x{:016x}",
-            input, values[i][2] >> 2, result, expected);
+            input, values[i][2] >> 2, values[i][2] & 0b11, result, expected);
   }
   END_TEST();
 }
