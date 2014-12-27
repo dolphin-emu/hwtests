@@ -144,13 +144,72 @@ static void MfsrinTest()
 
 	END_TEST();
 }
+
+static u32 s_sr_backup[16];
+
+template<u8 sr>
+inline static void DoBackup()
+{
+	asm("mfsr %0, %1" : "=r" (s_sr_backup[sr]) : "I" (sr));
+}
+
+static void Backup()
+{
+	DoBackup<0>();
+	DoBackup<1>();
+	DoBackup<2>();
+	DoBackup<3>();
+	DoBackup<4>();
+	DoBackup<5>();
+	DoBackup<6>();
+	DoBackup<7>();
+	DoBackup<8>();
+	DoBackup<9>();
+	DoBackup<10>();
+	DoBackup<11>();
+	DoBackup<12>();
+	DoBackup<13>();
+	DoBackup<14>();
+	DoBackup<15>();
+}
+
+template<u8 sr>
+inline static void DoRestore()
+{
+	asm("mtsr %0, %1" :: "I" (sr), "r" (s_sr_backup[sr]));
+}
+
+static void Restore()
+{
+	DoRestore<0>();
+	DoRestore<1>();
+	DoRestore<2>();
+	DoRestore<3>();
+	DoRestore<4>();
+	DoRestore<5>();
+	DoRestore<6>();
+	DoRestore<7>();
+	DoRestore<8>();
+	DoRestore<9>();
+	DoRestore<10>();
+	DoRestore<11>();
+	DoRestore<12>();
+	DoRestore<13>();
+	DoRestore<14>();
+	DoRestore<15>();
+}
+
 int main()
 {
 	network_init();
 
+	Backup();
+
 	MtsrTest();
 	MtsrinTest();
 	MfsrinTest();
+
+	Restore();
 
 	network_printf("Shutting down...\n");
 	network_shutdown();
