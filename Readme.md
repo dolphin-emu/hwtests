@@ -7,7 +7,7 @@ Released under GPLv2.
 - CMake
 - devkitPPC
 - libogc (if not installed into ${DEVKITPRO}/libogc, a CMake variable called LIBOGCDIR needs to be specified)
-- DEVKITPRO and DEVKITPRO environment variables (see devkitPPC documentation)
+- DEVKITPRO and DEVKITPPC environment variables (see devkitPPC documentation)
 
 To use the run_* CMake targets:
 - netcat
