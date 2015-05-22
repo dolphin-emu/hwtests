@@ -10,6 +10,8 @@
 #include <gccore.h>
 #include <wiiuse/wpad.h>
 
+#define HW_PEEK 13884592
+
 GXRModeObj	*screenMode;
 static void	*frameBuffer;
 static vu8	readyForCopy;
@@ -159,6 +161,12 @@ static void	test_peek(u16 x, u16 y)
 	// Test a peek
 	GX_PeekZ(x, y, &z);
 	printf("Z Peek: %d\n",z);
+
+	// Compare to hardware
+	if (z != HW_PEEK)
+		printf("The Z value is INACCURATE!\n");
+	else
+		printf("The Z value is accurate.\n");
 
 	// Mark the location
 	GX_PokeBlendMode(GX_BM_LOGIC, 1, 0, GX_LO_COPY);
