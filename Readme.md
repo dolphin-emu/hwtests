@@ -20,3 +20,6 @@ To build all tests, call `./build.sh` from the root directory. (Set the MAKEFLAG
 Tests are run by sending their ELFs one-by-one over the network to a Wii running the Homebrew Channel. To do this, call `make run_$NAMEOFTEST` from the build directory.
 
 To run all tests, call `make -j1 run` from the build directory. Note that there are some very slow tests.
+
+Test results are sent back over TCP on port 16784, if you are running the test locally on an emulator you can simply run
+the command `telnet localhost 16784` in the terminal.
