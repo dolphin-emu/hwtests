@@ -33,6 +33,7 @@ public:
 	Quad& VertexBottomLeft(f32 x, f32 y, f32 z);
 
 	Quad& AtDepth(f32 depth);
+	Quad& ZScaleBias(f32 scale, f32 bias);
 
 	Quad& ColorRGBA(u8 r, u8 g, u8 b, u8 a);
 
@@ -40,6 +41,10 @@ public:
 
 private:
 	f32 x[4], y[4], z[4];
+
+	// orthographic projection parameters
+	f32 z_scale;
+	f32 z_bias;
 
 	bool has_color;
 	u32 color;
