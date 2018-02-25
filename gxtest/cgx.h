@@ -21,49 +21,56 @@
 
 typedef union
 {
-	volatile u8 U8;
-	volatile s8 S8;
-	volatile u16 U16;
-	volatile s16 S16;
-	volatile u32 U32;
-	volatile s32 S32;
-	volatile f32 F32;
+  volatile u8 U8;
+  volatile s8 S8;
+  volatile u16 U16;
+  volatile s16 S16;
+  volatile u32 U32;
+  volatile s32 S32;
+  volatile f32 F32;
 } CWGPipe;
 
 static CWGPipe* const wgPipe = (CWGPipe*)0xCC008000;
 */
 
-#define CGX_LOAD_BP_REG(x) \
-	do { \
-		wgPipe->U8 = 0x61; \
-		wgPipe->U32 = (u32)(x); \
-	} while(0)
+#define CGX_LOAD_BP_REG(x)                                                                         \
+  do                                                                                               \
+  {                                                                                                \
+    wgPipe->U8 = 0x61;                                                                             \
+    wgPipe->U32 = (u32)(x);                                                                        \
+  } while (0)
 
-#define CGX_LOAD_CP_REG(x, y) \
-	do { \
-		wgPipe->U8 = 0x08; \
-		wgPipe->U8 = (u8)(x); \
-		wgPipe->U32 = (u32)(y); \
-	} while(0)
+#define CGX_LOAD_CP_REG(x, y)                                                                      \
+  do                                                                                               \
+  {                                                                                                \
+    wgPipe->U8 = 0x08;                                                                             \
+    wgPipe->U8 = (u8)(x);                                                                          \
+    wgPipe->U32 = (u32)(y);                                                                        \
+  } while (0)
 
-#define CGX_BEGIN_LOAD_XF_REGS(x, n) \
-	do { \
-		wgPipe->U8 = 0x10; \
-		wgPipe->U32 = (u32)(((((n)&0xffff)-1)<<16)|((x)&0xffff)); \
-	} while(0)
+#define CGX_BEGIN_LOAD_XF_REGS(x, n)                                                               \
+  do                                                                                               \
+  {                                                                                                \
+    wgPipe->U8 = 0x10;                                                                             \
+    wgPipe->U32 = (u32)(((((n)&0xffff) - 1) << 16) | ((x)&0xffff));                                \
+  } while (0)
 
 void CGX_Init();
 
-void CGX_SetViewport(float origin_x, float origin_y, float width, float height, float near, f32 far);
+void CGX_SetViewport(float origin_x, float origin_y, float width, float height, float near,
+                     f32 far);
 
 void CGX_LoadPosMatrixDirect(f32 mt[3][4], u32 index);
 void CGX_LoadProjectionMatrixPerspective(float mtx[4][4]);
 void CGX_LoadProjectionMatrixOrthographic(float mtx[4][4]);
 
-void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, u8 dest_format, bool copy_to_intensity, void* dest, bool scale_down=false, bool clear=false);
+void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, u8 dest_format,
+                      bool copy_to_intensity, void* dest, bool scale_down = false,
+                      bool clear = false);
 
 // TODO: Add support for other parameters...
-void CGX_DoEfbCopyXfb(u16 left, u16 top, u16 width, u16 src_height, u16 dst_height, void* dest, bool clear=false);
+void CGX_DoEfbCopyXfb(u16 left, u16 top, u16 width, u16 src_height, u16 dst_height, void* dest,
+                      bool clear = false);
 
 void CGX_ForcePipelineFlush();
 

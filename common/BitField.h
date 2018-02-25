@@ -75,62 +75,57 @@
  * correctly, e.g. printf("Value: %d", (s32)some_register.some_signed_fields);
  *
  */
-template<std::size_t position, std::size_t bits, typename T>
+template <std::size_t position, std::size_t bits, typename T>
 struct BitField
 {
 private:
-	// This constructor might be considered ambiguous:
-	// Would it initialize the storage or just the bitfield?
-	// Hence, delete it. Use the assignment operator to set bitfield values!
-	BitField(T val) = delete;
+  // This constructor might be considered ambiguous:
+  // Would it initialize the storage or just the bitfield?
+  // Hence, delete it. Use the assignment operator to set bitfield values!
+  BitField(T val) = delete;
 
 public:
-	// Force default constructor to be created
-	// so that we can use this within unions
-	BitField() = default;
+  // Force default constructor to be created
+  // so that we can use this within unions
+  BitField() = default;
 
-	BitField& operator = (T val)
-	{
-		storage = (storage & ~GetMask()) | ((val<<position) & GetMask());
-		return *this;
-	}
+  BitField& operator=(T val)
+  {
+    storage = (storage & ~GetMask()) | ((val << position) & GetMask());
+    return *this;
+  }
 
-	operator T() const
-	{
-		if (std::numeric_limits<T>::is_signed)
-		{
-			std::size_t shift = 8 * sizeof(T) - bits;
-			return (T)(((storage & GetMask()) << (shift - position)) >> shift);
-		}
-		else
-		{
-			return (T)((storage & GetMask()) >> position);
-		}
-	}
+  operator T() const
+  {
+    if (std::numeric_limits<T>::is_signed)
+    {
+      std::size_t shift = 8 * sizeof(T) - bits;
+      return (T)(((storage & GetMask()) << (shift - position)) >> shift);
+    }
+    else
+    {
+      return (T)((storage & GetMask()) >> position);
+    }
+  }
 
 private:
-	// StorageType is T for non-enum types and the underlying type of T if
-	// T is an enumeration. Note that T is wrapped within an enable_if in the
-	// former case to workaround compile errors which arise when using
-	// std::underlying_type<T>::type directly.
-	typedef typename std::conditional<std::is_enum<T>::value,
-	                                  std::underlying_type<T>,
-	                                  std::enable_if<true,T>>::type::type StorageType;
+  // StorageType is T for non-enum types and the underlying type of T if
+  // T is an enumeration. Note that T is wrapped within an enable_if in the
+  // former case to workaround compile errors which arise when using
+  // std::underlying_type<T>::type directly.
+  typedef typename std::conditional<std::is_enum<T>::value, std::underlying_type<T>,
+                                    std::enable_if<true, T>>::type::type StorageType;
 
-	// Unsigned version of StorageType
-	typedef typename std::make_unsigned<StorageType>::type StorageTypeU;
+  // Unsigned version of StorageType
+  typedef typename std::make_unsigned<StorageType>::type StorageTypeU;
 
-	StorageType GetMask() const
-	{
-		return ((~(StorageTypeU)0) >> (8*sizeof(T) - bits)) << position;
-	}
+  StorageType GetMask() const { return ((~(StorageTypeU)0) >> (8 * sizeof(T) - bits)) << position; }
+  StorageType storage;
 
-	StorageType storage;
+  static_assert(bits + position <= 8 * sizeof(T), "Bitfield out of range");
 
-	static_assert(bits + position <= 8 * sizeof(T), "Bitfield out of range");
-
-	// And, you know, just in case people specify something stupid like bits=position=0x80000000
-	static_assert(position < 8 * sizeof(T), "Invalid position");
-	static_assert(bits <= 8 * sizeof(T), "Invalid number of bits");
-	static_assert(bits > 0, "Invalid number of bits");
+  // And, you know, just in case people specify something stupid like bits=position=0x80000000
+  static_assert(position < 8 * sizeof(T), "Invalid position");
+  static_assert(bits <= 8 * sizeof(T), "Invalid number of bits");
+  static_assert(bits > 0, "Invalid number of bits");
 };
