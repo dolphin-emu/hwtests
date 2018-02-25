@@ -11,7 +11,7 @@
 #include <limits>
 #include <type_traits>
 
-#include "CommonTypes.h"
+#include "common/CommonTypes.h"
 
 /*
  * Abstract bitfield class

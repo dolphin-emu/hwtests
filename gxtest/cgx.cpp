@@ -11,10 +11,10 @@
 #include <ogc/irq.h>
 #include <ogc/machine/processor.h>
 
-#include "CommonTypes.h"
-#include "BPMemory.h"
-#include "CPMemory.h"
-#include "XFMemory.h"
+#include "common/CommonTypes.h"
+#include "gxtest/BPMemory.h"
+#include "gxtest/CPMemory.h"
+#include "gxtest/XFMemory.h"
 
 #include "cgx.h"
 

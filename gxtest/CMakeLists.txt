@@ -1,6 +1,6 @@
 set(COMMON_CODE
                 cgx.cpp
-                gxtest_util.cpp)
+                util.cpp)
 
 add_hwtest(gxtest bitfield      bitfield.cpp)
 add_hwtest(gxtest clipping      clipping.cpp)

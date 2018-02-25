@@ -1,7 +1,7 @@
 #include <gctypes.h>
 #include <wiiuse/wpad.h>
-#include "CommonFuncs.h"
-#include "hwtests.h"
+#include "common/CommonFuncs.h"
+#include "common/hwtests.h"
 
 // Generates a bitmask from the ten bits encoded in the instruction.
 // mb and me are what the two 5 bit sections are called in the instruction encoding.

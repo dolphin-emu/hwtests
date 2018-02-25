@@ -8,9 +8,9 @@
 #include <gccore.h>
 #include <ogc/video.h>
 
-#include "cgx.h"
-#include "cgx_defaults.h"
-#include "gxtest_util.h"
+#include "gxtest/cgx.h"
+#include "gxtest/cgx_defaults.h"
+#include "gxtest/util.h"
 
 //#define ENABLE_DEBUG_DISPLAY
 

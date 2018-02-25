@@ -3,14 +3,14 @@
 // Refer to the license.txt file included.
 
 #include <initializer_list>
-#include "hwtests.h"
+#include "common/hwtests.h"
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <wiiuse/wpad.h>
-#include "cgx.h"
-#include "cgx_defaults.h"
-#include "gxtest_util.h"
+#include "gxtest/cgx.h"
+#include "gxtest/cgx_defaults.h"
+#include "gxtest/util.h"
 #include <ogcsys.h>
 
 void CoordinatePrecisionTest()

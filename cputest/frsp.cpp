@@ -1,6 +1,6 @@
 #include <gctypes.h>
 #include <wiiuse/wpad.h>
-#include "hwtests.h"
+#include "common/hwtests.h"
 
 // Float Round to Single Precision
 // TODO: check ps1

@@ -25,7 +25,7 @@ function(add_hwtest module testname filelist)
     add_dependencies(run run_${module}_${testname})
 endfunction()
 
-include_directories(common)
+include_directories(./)
 
 add_subdirectory(common)
 add_subdirectory(cputest)

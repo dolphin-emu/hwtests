@@ -6,7 +6,7 @@
 #define _CPMEMORY_H
 
 //#include "Common.h"
-#include "BitField.h"
+#include "common/BitField.h"
 
 // Vertex array numbers
 enum
@@ -39,7 +39,7 @@ enum
 enum
 {
 	FORMAT_16B_565		= 0,	// NA
-	FORMAT_24B_888		= 1,	
+	FORMAT_24B_888		= 1,
 	FORMAT_32B_888x		= 2,
 	FORMAT_16B_4444		= 3,
 	FORMAT_24B_6666		= 4,
@@ -255,10 +255,10 @@ struct TexAttr
 struct TVtxAttr
 {
 	u8 PosElements;
-	u8 PosFormat; 
-	u8 PosFrac; 
+	u8 PosFormat;
+	u8 PosFrac;
 	u8 NormalElements;
-	u8 NormalFormat; 
+	u8 NormalFormat;
 	ColorAttr color[2];
 	TexAttr texCoord[8];
 	u8 ByteDequant;

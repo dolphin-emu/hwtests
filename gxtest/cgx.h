@@ -13,7 +13,7 @@
 
 #include <ogc/gx.h>
 
-#include "CommonTypes.h"
+#include "common/CommonTypes.h"
 
 #pragma once
 

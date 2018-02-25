@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "BPMemory.h"
-#include "CPMemory.h"
-#include "XFMemory.h"
+#include "gxtest/BPMemory.h"
+#include "gxtest/CPMemory.h"
+#include "gxtest/XFMemory.h"
 
 
 template<typename T>
