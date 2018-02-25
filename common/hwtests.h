@@ -25,4 +25,8 @@ void privEndTest();
 void network_init();
 void network_shutdown();
 void network_vprintf(const char* str, va_list args);
-void network_printf(const char* str, ...);
+void network_printf(const char* str, ...)
+#ifndef _MSC_VER
+__attribute__((__format__(printf, 1, 2)))
+#endif
+;
