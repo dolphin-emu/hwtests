@@ -4,12 +4,14 @@ project(hwtests)
 
 message(STATUS "Using toolchain file " ${CMAKE_TOOLCHAIN_FILE})
 
-add_definitions(-std=c++11)
-
 include_directories(${LIBOGCDIR}/include)
 link_directories(${DEVKITPRO}/libogc/lib/wii)
 
 set(MACHDEP "-DGEKKO -mrvl -mcpu=750 -meabi -mhard-float")
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} ${MACHDEP}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MACHDEP}")
