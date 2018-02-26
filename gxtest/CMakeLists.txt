@@ -1,9 +1,5 @@
-set(COMMON_CODE
-                cgx.cpp
-                util.cpp)
-
-add_hwtest(gxtest bitfield      bitfield.cpp)
-add_hwtest(gxtest clipping      clipping.cpp)
-add_hwtest(gxtest lighting      lighting.cpp)
-add_hwtest(gxtest rasterization rasterization.cpp)
-add_hwtest(gxtest tev           tev.cpp)
+add_hwtest(MODULE gxtest TEST bitfield FILES bitfield.cpp cgx.cpp util.cpp)
+add_hwtest(MODULE gxtest TEST clipping FILES clipping.cpp cgx.cpp util.cpp)
+add_hwtest(MODULE gxtest TEST lighting FILES lighting.cpp cgx.cpp util.cpp)
+add_hwtest(MODULE gxtest TEST rasterization FILES rasterization.cpp cgx.cpp util.cpp)
+add_hwtest(MODULE gxtest TEST tev FILES tev.cpp cgx.cpp util.cpp)

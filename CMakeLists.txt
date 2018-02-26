@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.5)
 
 project(hwtests)
 
@@ -17,12 +17,18 @@ set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 
 add_custom_target(run)
 
-function(add_hwtest module testname filelist)
-    add_executable(${module}_${testname} ${filelist} ${COMMON_CODE})
-    target_link_libraries(${module}_${testname} hwtests_common wiiuse bte fat ogc m)
-    add_custom_target(run_${module}_${testname} sh ${CMAKE_SOURCE_DIR}/run.sh ${module}_${testname}${CMAKE_EXECUTABLE_SUFFIX})
-    add_dependencies(run_${module}_${testname} ${module}_${testname})
-    add_dependencies(run run_${module}_${testname})
+function(add_hwtest)
+    set(one_value_args MODULE TEST)
+    set(multi_value_args FILES)
+    cmake_parse_arguments(add_hwtest "" "${one_value_args}" "${multi_value_args}" ${ARGN} )
+
+    set(executable_name ${add_hwtest_MODULE}_${add_hwtest_TEST})
+
+    add_executable(${executable_name} ${add_hwtest_FILES})
+    target_link_libraries(${executable_name} hwtests_common wiiuse bte fat ogc m)
+    add_custom_target(run_${executable_name} sh ${CMAKE_SOURCE_DIR}/run.sh ${executable_name}${CMAKE_EXECUTABLE_SUFFIX})
+    add_dependencies(run_${executable_name} ${executable_name})
+    add_dependencies(run run_${executable_name})
 endfunction()
 
 include_directories(./)
