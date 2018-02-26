@@ -2,5 +2,5 @@
 
 mkdir -p build
 cd build
-cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain-powerpc.cmake -G "Unix Makefiles" ..
-make
+cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain-powerpc.cmake -G Ninja ..
+ninja
