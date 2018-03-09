@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(hwtests)
+project(hwtests CXX ASM)
 
 message(STATUS "Using toolchain file " ${CMAKE_TOOLCHAIN_FILE})
 
@@ -13,6 +13,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+set(CMAKE_ASM_FLAGS "-x assembler-with-cpp")
 set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} ${MACHDEP}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MACHDEP} -fdiagnostics-color")
 set(CMAKE_EXECUTABLE_SUFFIX ".elf")
@@ -38,3 +39,4 @@ include_directories(./)
 add_subdirectory(common)
 add_subdirectory(cputest)
 add_subdirectory(gxtest)
+add_subdirectory(iostest)
