@@ -207,6 +207,15 @@ Result Write(int fd, void* buffer, size_t count) {
   return SendRequest(request);
 }
 
+Result Seek(int fd, u32 offset, SeekMode mode) {
+  Request request{};
+  request.cmd = Command::Seek;
+  request.fd = fd;
+  request.arg[0] = offset;
+  request.arg[1] = u32(mode);
+  return SendRequest(request);
+}
+
 Result Ioctl(int fd, u32 number, void* in, size_t in_size, void* out, size_t out_size) {
   Request request{};
   request.cmd = Command::Ioctl;
