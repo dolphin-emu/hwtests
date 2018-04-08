@@ -32,6 +32,13 @@ enum class OpenMode : u32
   ReadWrite = 3,
 };
 
+enum class SeekMode : u32
+{
+  Set = 0,
+  Current = 1,
+  End = 2,
+};
+
 struct IoVector
 {
   void* data;
@@ -66,6 +73,7 @@ Result Open(const char* path, OpenMode mode);
 Result Close(int fd);
 Result Read(int fd, void* buffer, size_t count);
 Result Write(int fd, void* buffer, size_t count);
+Result Seek(int fd, u32 offset, SeekMode mode);
 Result Ioctl(int fd, u32 number, void* in, size_t in_size, void* out, size_t out_size);
 Result Ioctlv(int fd, u32 number, u32 in_count, u32 io_count, IoVector* vectors);
 

@@ -11,6 +11,7 @@
 #include "common/CommonTypes.h"
 #include "common/hwtests.h"
 #include "iostest/ipc.h"
+#include "iostest/result_printer.h"
 
 template <typename TestFunction>
 static std::vector<ipc::Result> Test(TestFunction function) {
@@ -65,7 +66,7 @@ static std::vector<ipc::Result> TestInvalidFdTiming(int fd) {
   });
 }
 
-static void PrintResults(const char* description, const std::vector<ipc::Result>& results) {
+static void PrintResults(const std::string& description, const std::vector<ipc::Result>& results) {
   if (results.empty())
     return;
 
@@ -85,29 +86,26 @@ static void PrintResults(const char* description, const std::vector<ipc::Result>
   u32 stdev_ack = std::sqrt(acc_ack / (results.size() - 1));
   u32 stdev_reply = std::sqrt(acc_reply / (results.size() - 1));
 
-  network_printf("\033[1m%s\033[0m (%u tests)\n", description, static_cast<u32>(results.size()));
+  network_printf("\033[1m%s\033[0m (%u tests)\n", description.c_str(),
+                 static_cast<u32>(results.size()));
   network_printf("ack_ticks=%" PRIu64 "\033[2m/%u\033[0m, ", mean_ack_ticks, stdev_ack);
   network_printf("reply_ticks=%" PRIu64 "\033[2m/%u\033[0m\n\n", mean_reply_ticks, stdev_reply);
 }
 
 int main() {
+  ResultPrinter<std::vector<ipc::Result>> results;
   ipc::Init();
-  const auto invalid_cmd = TestInvalidCommandTiming();
-  const auto invalid_cmd_with_interrupt = TestInvalidCommandTimingWithInterrupt();
-  const auto open_with_fd_table_full = TestOpenWithFdTableFullTiming();
-  const auto invalid_open = TestInvalidOpenTiming();
-  const auto invalid_fd_0 = TestInvalidFdTiming(0);
-  const auto invalid_fd_200 = TestInvalidFdTiming(200);
+  results.Add("Invalid command", TestInvalidCommandTiming());
+  results.Add("Invalid command (with IPC interrupt)", TestInvalidCommandTimingWithInterrupt());
+  results.Add("Open with full FD table", TestOpenWithFdTableFullTiming());
+  results.Add("Invalid open", TestInvalidOpenTiming());
+  results.Add("Invalid FD (0)", TestInvalidFdTiming(0));
+  results.Add("Invalid FD (200)", TestInvalidFdTiming(2000));
   ipc::Shutdown();
 
   network_init();
   network_printf("IOS version %u\n\n", IOS_GetVersion());
-  PrintResults("Invalid command", invalid_cmd);
-  PrintResults("Invalid command (with IPC interrupt)", invalid_cmd_with_interrupt);
-  PrintResults("Open with full FD table", open_with_fd_table_full);
-  PrintResults("Invalid open", invalid_open);
-  PrintResults("Invalid FD (0)", invalid_fd_0);
-  PrintResults("Invalid FD (200)", invalid_fd_200);
+  results.Print(PrintResults);
   network_shutdown();
   return 0;
 }
