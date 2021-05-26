@@ -1,6 +1,7 @@
 add_hwtest(MODULE cputest TEST fctiwz FILES fctiwz.cpp)
 add_hwtest(MODULE cputest TEST frsp FILES frsp.cpp)
 add_hwtest(MODULE cputest TEST load FILES load.cpp)
+add_hwtest(MODULE cputest TEST ni FILES ni.cpp)
 add_hwtest(MODULE cputest TEST reciprocal FILES reciprocal.cpp)
 add_hwtest(MODULE cputest TEST mtspr FILES mtspr.cpp)
 add_hwtest(MODULE cputest TEST srawix FILES srawix.cpp)
