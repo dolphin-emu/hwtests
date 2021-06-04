@@ -1,4 +1,5 @@
 add_hwtest(MODULE cputest TEST cr FILES cr.cpp)
+add_hwtest(MODULE cputest TEST fctiw FILES fctiw.cpp)
 add_hwtest(MODULE cputest TEST fctiwz FILES fctiwz.cpp)
 add_hwtest(MODULE cputest TEST frsp FILES frsp.cpp)
 add_hwtest(MODULE cputest TEST load FILES load.cpp)
