@@ -6,12 +6,14 @@
 #include <ogc/system.h>
 #include <wiiuse/wpad.h>
 
+#include "common/Align.h"
 #include "common/BitUtils.h"
 #include "common/hwtests.h"
 
 // This test covers the behavior described in https://bugs.dolphin-emu.org/issues/12565
 
-constexpr size_t PAGE_SIZE = 4096;
+constexpr uintptr_t PAGE_SIZE = 4096;
+constexpr uintptr_t CACHE_LINE_SIZE = 32;
 
 static volatile u32* const s_pi_reg = reinterpret_cast<volatile u32*>(0xCC003000);
 
@@ -157,6 +159,15 @@ static void Initialize()
     VIDEO_WaitVSync();
 }
 
+// Get a pointer to a 64-byte buffer with a page boundary in the middle
+u8* GetMEM1Buffer()
+{
+  const uintptr_t mem1_lo = reinterpret_cast<uintptr_t>(SYS_GetArena1Lo());
+  const uintptr_t page_boundary = Common::AlignUp(mem1_lo + CACHE_LINE_SIZE, PAGE_SIZE);
+  SYS_SetArena1Lo(reinterpret_cast<void*>(page_boundary + CACHE_LINE_SIZE));
+  return reinterpret_cast<u8*>(page_boundary - CACHE_LINE_SIZE);
+}
+
 int main()
 {
   Initialize();
@@ -165,28 +176,24 @@ int main()
   IRQ_Request(IRQ_PI_ERROR, PIErrorHandler, nullptr);
   __UnmaskIrq(IM_PI_ERROR);
 
-  // Get a pointer to a page boundary, with at least 32 bytes available on each side of the boundary
   network_printf("Allocating memory...\n");
-  u8* memory_allocation = new u8[PAGE_SIZE + 32 * 4];
+  u8* memory_allocation = GetMEM1Buffer();
 
-  volatile u8* cached_ptr = reinterpret_cast<volatile u8*>(
-          reinterpret_cast<uintptr_t>(memory_allocation - 32) & ~(PAGE_SIZE - 1));
+  volatile u8* cached_ptr = reinterpret_cast<volatile u8*>(memory_allocation + 16);
 
-  UnalignedStoresTest(cached_ptr - 16, 1, true);
-  UnalignedStoresTest(cached_ptr - 16, 2, true);
-  UnalignedStoresTest(cached_ptr - 16, 4, true);
+  UnalignedStoresTest(cached_ptr, 1, true);
+  UnalignedStoresTest(cached_ptr, 2, true);
+  UnalignedStoresTest(cached_ptr, 4, true);
 
   network_printf("Invalidating cache...\n");
-  asm volatile("dcbi %0, %1" :: "r"(cached_ptr), "r"(-32));
-  asm volatile("dcbi %0, %1" :: "r"(cached_ptr), "r"(0));
+  asm volatile("dcbi %0, %1" :: "r"(memory_allocation), "r"(0));
+  asm volatile("dcbi %0, %1" :: "r"(memory_allocation), "r"(32));
 
   volatile u8* uncached_ptr = reinterpret_cast<volatile u8*>(MEM_K0_TO_K1(cached_ptr));
 
-  UnalignedStoresTest(uncached_ptr - 16, 1, false);
-  UnalignedStoresTest(uncached_ptr - 16, 2, false);
-  UnalignedStoresTest(uncached_ptr - 16, 4, false);
-
-  delete[] memory_allocation;
+  UnalignedStoresTest(uncached_ptr, 1, false);
+  UnalignedStoresTest(uncached_ptr, 2, false);
+  UnalignedStoresTest(uncached_ptr, 4, false);
 
   network_printf("Shutting down...\n");
   network_shutdown();
