@@ -152,7 +152,7 @@ Vec4<u8> ReadTestBuffer(int s, int t, int width)
 {
   u16 sBlk = s >> 2;
   u16 tBlk = t >> 2;
-  u16 widthBlks = (width >> 2) + 1;
+  u16 widthBlks = (width + 3) >> 2;
   u32 base = (tBlk * widthBlks + sBlk) << 5;
   u16 blkS = s & 3;
   u16 blkT = t & 3;
