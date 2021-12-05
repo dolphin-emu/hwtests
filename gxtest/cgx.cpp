@@ -93,24 +93,6 @@ void CGX_SetViewport(float origin_x, float origin_y, float width, float height, 
   wgPipe->F32 = far * 16777215.0f;
 }
 
-static inline void WriteMtxPS4x2(register f32 mt[3][4], register void* wgpipe)
-{
-  // Untested
-  register f32 tmp0, tmp1, tmp2, tmp3;
-
-  __asm__ __volatile__("psq_l %0,0(%4),0,0\n\
-		psq_l %1,8(%4),0,0\n\
-		psq_l %2,16(%4),0,0\n\
-		psq_l %3,24(%4),0,0\n\
-		psq_st %0,0(%5),0,0\n\
-		psq_st %1,0(%5),0,0\n\
-		psq_st %2,0(%5),0,0\n\
-		psq_st %3,0(%5),0,0"
-                       : "=&f"(tmp0), "=&f"(tmp1), "=&f"(tmp2), "=&f"(tmp3)
-                       : "b"(mt), "b"(wgpipe)
-                       : "memory");
-}
-
 void CGX_LoadPosMatrixDirect(f32 mt[3][4], u32 index)
 {
   // Untested
