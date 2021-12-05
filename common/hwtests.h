@@ -18,7 +18,11 @@
 
 // private testing functions. Don't use these, but use the above macros, instead.
 void privStartTest(const char* file, int line);
-void privDoTest(bool condition, const char* file, int line, const char* fail_msg, ...);
+void privDoTest(bool condition, const char* file, int line, const char* fail_msg, ...)
+#ifndef _MSC_VER
+    __attribute__((__format__(printf, 4, 5)))
+#endif
+    ;
 void privEndTest();
 // TODO: Not implemented, yet
 // void privSimpleTest(bool condition, const char* file, int line, const char* fail_msg, ...);

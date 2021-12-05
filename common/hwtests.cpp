@@ -21,12 +21,19 @@ static int number_of_tests = 0;
 int client_socket;
 int server_socket;
 
+// This is for Dolphin's benefit (with OSREPORT HLE). It won't end up on screen.
+// __attribute__((weak)) is needed so that it doesn't get optimized out.
+extern "C" __attribute__((weak)) void OSReport([[maybe_unused]] const char* fmt, ...) {}
+
 void network_vprintf(const char* str, va_list args)
 {
   char buffer[4096];
   //	int len = vsnprintf(buffer, 4096, str, args);
   int len = vsprintf(buffer, str, args);
-  net_send(client_socket, buffer, len + 1, 0);
+  // NOTE: vsprintf's return value doesn't include the null terminator.
+  // But we don't want to send the null terminator over the network either.
+  net_send(client_socket, buffer, len, 0);
+  OSReport("%s", buffer);
 }
 
 void network_printf(const char* str, ...)
