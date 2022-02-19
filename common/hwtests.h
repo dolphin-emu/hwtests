@@ -34,6 +34,8 @@ void privDoTest(bool condition, const char* file, int line, fmt::format_string<A
 }
 void privEndTest();
 
+void report_test_results();
+
 void network_init();
 void network_shutdown();
 void network_vprintf(const char* str, va_list args);
