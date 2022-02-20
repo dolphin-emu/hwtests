@@ -127,11 +127,11 @@ void Init()
   GX_End();
   GX_Flush();
 
-  PE_CONTROL ctrl;
+  PEControl ctrl;
   ctrl.hex = BPMEM_ZCOMPARE << 24;
-  ctrl.pixel_format = PIXELFMT_RGBA6_Z24;
-  ctrl.zformat = ZC_LINEAR;
-  ctrl.early_ztest = 0;
+  ctrl.pixel_format = PixelFormat::RGBA6_Z24;
+  ctrl.zformat = DepthFormat::ZLINEAR;
+  ctrl.early_ztest = false;
   CGX_LOAD_BP_REG(ctrl.hex);
 }
 
@@ -316,6 +316,40 @@ void CopyToTestBuffer(int left_most_pixel, int top_most_pixel, int right_most_pi
 Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorCombiner& last_cc,
                        const TevStageCombiner::AlphaCombiner& last_ac)
 {
+  TevColorArg color_reg;
+  switch (last_cc.dest)
+  {
+  case TevOutput::Prev:
+  default:
+    color_reg = TevColorArg::PrevColor;
+    break;
+  case TevOutput::Color0:
+    color_reg = TevColorArg::Color0;
+    break;
+  case TevOutput::Color1:
+    color_reg = TevColorArg::Color1;
+    break;
+  case TevOutput::Color2:
+    color_reg = TevColorArg::Color2;
+    break;
+  }
+  TevAlphaArg alpha_reg;
+  switch (last_ac.dest)
+  {
+  case TevOutput::Prev:
+  default:
+    alpha_reg = TevAlphaArg::PrevAlpha;
+    break;
+  case TevOutput::Color0:
+    alpha_reg = TevAlphaArg::Alpha0;
+    break;
+  case TevOutput::Color1:
+    alpha_reg = TevAlphaArg::Alpha1;
+    break;
+  case TevOutput::Color2:
+    alpha_reg = TevAlphaArg::Alpha2;
+    break;
+  }
   int previous_stage = ((last_cc.hex >> 24) - BPMEM_TEV_COLOR_ENV) >> 1;
   assert(previous_stage < 13);
   assert(previous_stage == (((last_ac.hex >> 24) - BPMEM_TEV_ALPHA_ENV) >> 1));
@@ -337,13 +371,13 @@ Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorComb
   // Enable new TEV stage. Note that we are using the "a" input here to make
   // sure the input doesn't get erroneously clamped to 11 bit range.
   auto cc1 = CGXDefault<TevStageCombiner::ColorCombiner>(previous_stage + 1);
-  cc1.a = last_cc.dest * 2;
-  cc1.shift = TEVSCALE_4;
+  cc1.a = color_reg;
+  cc1.scale = TevScale::Scale4;
   CGX_LOAD_BP_REG(cc1.hex);
 
   auto ac1 = CGXDefault<TevStageCombiner::AlphaCombiner>(previous_stage + 1);
-  ac1.a = last_ac.dest * 2;
-  ac1.shift = TEVSCALE_4;
+  ac1.a = alpha_reg;
+  ac1.scale = TevScale::Scale4;
   CGX_LOAD_BP_REG(ac1.hex);
 
   memset(test_buffer, 0, TEST_BUFFER_SIZE);  // Just for debugging
@@ -367,33 +401,33 @@ Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorComb
   // The following tev stages are exclusively used to rightshift the
   // upper bits such that they get written to the render target.
   cc1 = CGXDefault<TevStageCombiner::ColorCombiner>(previous_stage + 1);
-  cc1.d = last_cc.dest * 2;
-  cc1.shift = TEVDIVIDE_2;
+  cc1.d = color_reg;
+  cc1.scale = TevScale::Divide2;
   CGX_LOAD_BP_REG(cc1.hex);
 
   ac1 = CGXDefault<TevStageCombiner::AlphaCombiner>(previous_stage + 1);
-  ac1.d = last_ac.dest * 2;
-  ac1.shift = TEVDIVIDE_2;
+  ac1.d = alpha_reg;
+  ac1.scale = TevScale::Divide2;
   CGX_LOAD_BP_REG(ac1.hex);
 
   cc1 = CGXDefault<TevStageCombiner::ColorCombiner>(previous_stage + 2);
-  cc1.d = last_cc.dest * 2;
-  cc1.shift = TEVDIVIDE_2;
+  cc1.d = color_reg;
+  cc1.scale = TevScale::Divide2;
   CGX_LOAD_BP_REG(cc1.hex);
 
   ac1 = CGXDefault<TevStageCombiner::AlphaCombiner>(previous_stage + 2);
-  ac1.d = last_ac.dest * 2;
-  ac1.shift = TEVDIVIDE_2;
+  ac1.d = alpha_reg;
+  ac1.scale = TevScale::Divide2;
   CGX_LOAD_BP_REG(ac1.hex);
 
   cc1 = CGXDefault<TevStageCombiner::ColorCombiner>(previous_stage + 3);
-  cc1.d = last_cc.dest * 2;
-  cc1.shift = TEVDIVIDE_2;
+  cc1.d = color_reg;
+  cc1.scale = TevScale::Divide2;
   CGX_LOAD_BP_REG(cc1.hex);
 
   ac1 = CGXDefault<TevStageCombiner::AlphaCombiner>(previous_stage + 3);
-  ac1.d = last_ac.dest * 2;
-  ac1.shift = TEVDIVIDE_2;
+  ac1.d = alpha_reg;
+  ac1.scale = TevScale::Divide2;
   CGX_LOAD_BP_REG(ac1.hex);
 
   memset(test_buffer, 0, TEST_BUFFER_SIZE);

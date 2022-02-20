@@ -38,11 +38,11 @@ void LightingTest()
   genmode.numtevstages = 0;  // One stage
   CGX_LOAD_BP_REG(genmode.hex);
 
-  PE_CONTROL ctrl;
+  PEControl ctrl;
   ctrl.hex = BPMEM_ZCOMPARE << 24;
-  ctrl.pixel_format = PIXELFMT_RGB8_Z24;
-  ctrl.zformat = ZC_LINEAR;
-  ctrl.early_ztest = 0;
+  ctrl.pixel_format = PixelFormat::RGB8_Z24;
+  ctrl.zformat = DepthFormat::ZLINEAR;
+  ctrl.early_ztest = false;
   CGX_LOAD_BP_REG(ctrl.hex);
 
   // Test to check how the hardware rounds the final computation of the
@@ -58,9 +58,9 @@ void LightingTest()
     CGX_LOAD_BP_REG(zmode.hex);
 
     auto tevreg = CGXDefault<TevReg>(1, false);  // c0
-    tevreg.red = 0xff;
-    CGX_LOAD_BP_REG(tevreg.low);
-    CGX_LOAD_BP_REG(tevreg.high);
+    tevreg.ra.red = 0xff;
+    CGX_LOAD_BP_REG(tevreg.ra.hex);
+    CGX_LOAD_BP_REG(tevreg.bg.hex);
 
     CGX_BEGIN_LOAD_XF_REGS(0x1005, 1);
     wgPipe->U32 = 0;  // 0 = enable clipping, 1 = disable clipping
@@ -75,7 +75,7 @@ void LightingTest()
 
     CGX_SetViewport(0.0f, 0.0f, 201.0f, 50.0f, 0.0f, 1.0f);
     auto cc = CGXDefault<TevStageCombiner::ColorCombiner>(0);
-    cc.d = TEVCOLORARG_RASC;
+    cc.d = TevColorArg::RasColor;
     CGX_LOAD_BP_REG(cc.hex);
     GXTest::Quad().ColorRGBA(0, 0, 0, 0xff).Draw();
 

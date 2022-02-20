@@ -25,9 +25,9 @@ GenMode CGXDefault<GenMode>()
   genmode.numtexgens = 0;
   genmode.numcolchans = 1;
   genmode.numtevstages = 0;  // One stage
-  genmode.cullmode = 0;      // No culling
+  genmode.cullmode = CullMode::None;
   genmode.numindstages = 0;
-  genmode.zfreeze = 0;
+  genmode.zfreeze = false;
   return genmode;
 }
 
@@ -36,9 +36,9 @@ ZMode CGXDefault<ZMode>()
 {
   ZMode zmode;
   zmode.hex = BPMEM_ZMODE << 24;
-  zmode.testenable = 0;
-  zmode.func = COMPARE_ALWAYS;
-  zmode.updateenable = 0;
+  zmode.testenable = false;
+  zmode.func = CompareMode::Always;
+  zmode.updateenable = false;
   return zmode;
 }
 
@@ -47,15 +47,15 @@ TevStageCombiner::ColorCombiner CGXDefault<TevStageCombiner::ColorCombiner>(int 
 {
   TevStageCombiner::ColorCombiner cc;
   cc.hex = (BPMEM_TEV_COLOR_ENV + 2 * stage) << 24;
-  cc.a = TEVCOLORARG_ZERO;
-  cc.b = TEVCOLORARG_ZERO;
-  cc.c = TEVCOLORARG_ZERO;
-  cc.d = TEVCOLORARG_ZERO;
-  cc.op = TEVOP_ADD;
-  cc.bias = 0;
-  cc.shift = TEVSCALE_1;
-  cc.clamp = 0;
-  cc.dest = GX_TEVPREV;
+  cc.a = TevColorArg::Zero;
+  cc.b = TevColorArg::Zero;
+  cc.c = TevColorArg::Zero;
+  cc.d = TevColorArg::Zero;
+  cc.op = TevOp::Add;
+  cc.bias = TevBias::Zero;
+  cc.scale = TevScale::Scale1;
+  cc.clamp = false;
+  cc.dest = TevOutput::Prev;
   return cc;
 }
 
@@ -64,15 +64,15 @@ TevStageCombiner::AlphaCombiner CGXDefault<TevStageCombiner::AlphaCombiner>(int 
 {
   TevStageCombiner::AlphaCombiner ac;
   ac.hex = (BPMEM_TEV_ALPHA_ENV + 2 * stage) << 24;
-  ac.a = TEVALPHAARG_ZERO;
-  ac.b = TEVALPHAARG_ZERO;
-  ac.c = TEVALPHAARG_ZERO;
-  ac.d = TEVALPHAARG_ZERO;
-  ac.op = TEVOP_ADD;
-  ac.bias = 0;
-  ac.shift = TEVSCALE_1;
-  ac.clamp = 0;
-  ac.dest = GX_TEVPREV;
+  ac.a = TevAlphaArg::Zero;
+  ac.b = TevAlphaArg::Zero;
+  ac.c = TevAlphaArg::Zero;
+  ac.d = TevAlphaArg::Zero;
+  ac.op = TevOp::Add;
+  ac.bias = TevBias::Zero;
+  ac.scale = TevScale::Scale1;
+  ac.clamp = false;
+  ac.dest = TevOutput::Prev;
   return ac;
 }
 
@@ -83,8 +83,8 @@ TwoTevStageOrders CGXDefault<TwoTevStageOrders>(int index)
   orders.hex = (BPMEM_TREF + index) << 24;
   orders.texmap0 = GX_TEXMAP_NULL;
   orders.texcoord0 = GX_TEXCOORDNULL;
-  orders.enable0 = 0;
-  orders.colorchan0 = 0;  // equivalent to GX_COLOR0A0
+  orders.enable0 = false;
+  orders.colorchan0 = RasColorChan::Color0;
   return orders;
 }
 
@@ -92,10 +92,9 @@ template <>
 TevReg CGXDefault<TevReg>(int index, bool is_konst_color)
 {
   TevReg tevreg;
-  tevreg.hex = 0;
-  tevreg.low = (BPMEM_TEV_REGISTER_L + 2 * index) << 24;
-  tevreg.high = (BPMEM_TEV_REGISTER_H + 2 * index) << 24;
-  tevreg.type_ra = is_konst_color;
-  tevreg.type_bg = is_konst_color;
+  tevreg.ra.hex = (BPMEM_TEV_COLOR_RA + 2 * index) << 24;
+  tevreg.bg.hex = (BPMEM_TEV_COLOR_BG + 2 * index) << 24;
+  tevreg.ra.type = is_konst_color ? TevRegType::Constant : TevRegType::Color;
+  tevreg.bg.type = is_konst_color ? TevRegType::Constant : TevRegType::Color;
   return tevreg;
 }

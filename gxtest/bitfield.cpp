@@ -17,12 +17,11 @@ void BitfieldTest()
 {
   START_TEST();
 
-  TevReg reg;
-  reg.hex = 0;
-  reg.low = 0x345678;
+  TevReg::RA reg;
+  reg.hex = 0x345678;
   DO_TEST(reg.alpha == 837, "Values don't match (have: {})", reg.alpha);
   DO_TEST(reg.red == -392, "Values don't match (have: {})", reg.red);
-  reg.low = 0x4BC6A8;
+  reg.hex = 0x4BC6A8;
   DO_TEST(reg.alpha == -836, "Values don't match (have: {})", reg.alpha);
   DO_TEST(reg.red == -344, "Values don't match (have: {})", reg.red);
   reg.hex = 0;

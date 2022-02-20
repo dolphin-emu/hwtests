@@ -145,7 +145,7 @@ void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, u8 dest_format,
   coords.y = top;
   CGX_LOAD_BP_REG(coords.hex);
 
-  coords.hex = BPMEM_EFB_BR << 24;
+  coords.hex = BPMEM_EFB_WH << 24;
   coords.x = width - 1;
   coords.y = height - 1;
   CGX_LOAD_BP_REG(coords.hex);
@@ -161,8 +161,8 @@ void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, u8 dest_format,
   reg.half_scale = scale_down;
   reg.clear = clear;
   reg.intensity_fmt = copy_to_intensity;
-  reg.clamp0 = 1;
-  reg.clamp1 = 1;
+  reg.clamp_top = true;
+  reg.clamp_bottom = true;
   CGX_LOAD_BP_REG(reg.Hex);
 
   DCFlushRange(dest, GX_GetTexBufferSize(width, height, GX_TF_RGBA8, GX_FALSE, 1));

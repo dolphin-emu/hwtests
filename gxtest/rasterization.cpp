@@ -31,11 +31,11 @@ void CoordinatePrecisionTest()
   wgPipe->U32 = chan.hex;
 
   auto ac = CGXDefault<TevStageCombiner::AlphaCombiner>(0);
-  ac.d = TEVALPHAARG_RASA;
+  ac.d = TevAlphaArg::RasAlpha;
   CGX_LOAD_BP_REG(ac.hex);
 
   auto cc = CGXDefault<TevStageCombiner::ColorCombiner>(0);
-  cc.d = TEVCOLORARG_RASC;
+  cc.d = TevColorArg::RasColor;
   CGX_LOAD_BP_REG(cc.hex);
 
   // Test at which coordinates a pixel is considered to be within a primitive.
