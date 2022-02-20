@@ -131,13 +131,9 @@ public:
   // so that we can use this within unions
   constexpr BitField() = default;
 
-  // We explicitly delete the copy assignment operator here, because the
-  // default copy assignment would copy the full storage value, rather than
-  // just the bits relevant to this particular bit field.
-  // Ideally, we would just implement the copy assignment to copy only the
-  // relevant bits, but we're prevented from doing that because the savestate
-  // code expects that this class is trivially copyable.
-  BitField& operator=(const BitField&) = delete;
+  // Warning!  This copies ALL storage bits, not just the bits represented by this bitfield.
+  // This exists so that unions can be copyable.
+  BitField& operator=(const BitField&) = default;
 
   BitField& operator=(T val)
   {
