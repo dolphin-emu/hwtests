@@ -14,6 +14,7 @@
 #include <ogc/gx.h>
 
 #include "common/CommonTypes.h"
+#include "BPMemory.h"
 
 #pragma once
 
@@ -64,9 +65,23 @@ void CGX_LoadPosMatrixDirect(f32 mt[3][4], u32 index);
 void CGX_LoadProjectionMatrixPerspective(float mtx[4][4]);
 void CGX_LoadProjectionMatrixOrthographic(float mtx[4][4]);
 
-void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, u8 dest_format,
-                      bool copy_to_intensity, void* dest, bool scale_down = false,
-                      bool clear = false);
+struct EFBCopyParams
+{
+  EFBCopyFormat format = EFBCopyFormat::RGBA8;
+  bool clamp_top = true;
+  bool clamp_bottom = true;
+  bool unknown_bit = false;
+  GammaCorrection gamma = GammaCorrection::Gamma1_0;
+  bool half_scale = false;
+  bool scale_invert = false;
+  bool clear = false;
+  FrameToField frame_to_field = FrameToField::Progressive;
+  bool copy_to_xfb = false;
+  bool intensity_fmt = false;
+  bool auto_conv = false;
+};
+
+void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, void* dest, const EFBCopyParams& params = {});
 
 // TODO: Add support for other parameters...
 void CGX_DoEfbCopyXfb(u16 left, u16 top, u16 width, u16 src_height, u16 dst_height, void* dest,

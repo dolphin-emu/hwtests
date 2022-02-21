@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "cgx.h"
+
 namespace GXTest
 {
 // Four component vector with arbitrary base type
@@ -53,7 +55,7 @@ void DrawFullScreenQuad();
 
 // Perform an RGBA8 EFB copy to the internal testing buffer
 void CopyToTestBuffer(int left_most_pixel, int top_most_pixel, int right_most_pixel,
-                      int bottom_most_pixel);
+                      int bottom_most_pixel, const EFBCopyParams& params = {});
 
 // Read back result from test buffer
 // CopyToTestBuffer needs to be called before using this.

@@ -129,8 +129,7 @@ void CGX_LoadProjectionMatrixOrthographic(float mtx[4][4])
   GX_LoadProjectionMtx(mtx, 1);
 }
 
-void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, u8 dest_format,
-                      bool copy_to_intensity, void* dest, bool scale_down, bool clear)
+void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, void* dest, const EFBCopyParams& params)
 {
   assert(left <= 1023);
   assert(top <= 1023);
@@ -157,12 +156,18 @@ void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, u8 dest_format,
 
   UPE_Copy reg;
   reg.Hex = BPMEM_TRIGGER_EFB_COPY << 24;
-  reg.target_pixel_format = ((dest_format << 1) & 0xE) | (dest_format >> 3);
-  reg.half_scale = scale_down;
-  reg.clear = clear;
-  reg.intensity_fmt = copy_to_intensity;
-  reg.clamp_top = true;
-  reg.clamp_bottom = true;
+  reg.SetRealFormat(params.format);
+  reg.clamp_top = params.clamp_top;
+  reg.clamp_bottom = params.clamp_bottom;
+  reg.unknown_bit = params.unknown_bit;
+  reg.gamma = params.gamma;
+  reg.half_scale = params.half_scale;
+  reg.scale_invert = params.scale_invert;
+  reg.clear = params.clear;
+  reg.frame_to_field = params.frame_to_field;
+  reg.copy_to_xfb = params.copy_to_xfb;
+  reg.intensity_fmt = params.intensity_fmt;
+  reg.auto_conv = params.auto_conv;
   CGX_LOAD_BP_REG(reg.Hex);
 
   DCFlushRange(dest, GX_GetTexBufferSize(width, height, GX_TF_RGBA8, GX_FALSE, 1));

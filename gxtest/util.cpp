@@ -305,12 +305,12 @@ void Quad::Draw()
 }
 
 void CopyToTestBuffer(int left_most_pixel, int top_most_pixel, int right_most_pixel,
-                      int bottom_most_pixel)
+                      int bottom_most_pixel, const EFBCopyParams& params)
 {
   // TODO: Do we need to impose additional constraints on the parameters?
   memset(test_buffer, 0, TEST_BUFFER_SIZE);
   CGX_DoEfbCopyTex(left_most_pixel, top_most_pixel, right_most_pixel - left_most_pixel + 1,
-                   bottom_most_pixel - top_most_pixel + 1, 0x6 /*RGBA8*/, false, test_buffer);
+                   bottom_most_pixel - top_most_pixel + 1, test_buffer, params);
 }
 
 Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorCombiner& last_cc,
@@ -382,7 +382,7 @@ Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorComb
 
   memset(test_buffer, 0, TEST_BUFFER_SIZE);  // Just for debugging
   Quad().AtDepth(1.0).ColorRGBA(255, 255, 255, 255).Draw();
-  CGX_DoEfbCopyTex(0, 0, 100, 100, 0x6 /*RGBA8*/, false, test_buffer);
+  CGX_DoEfbCopyTex(0, 0, 100, 100, test_buffer);
   CGX_ForcePipelineFlush();
   CGX_WaitForGpuToFinish();
   u16 result1r = ReadTestBuffer(5, 5, 100).r >> 2;
@@ -432,7 +432,7 @@ Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorComb
 
   memset(test_buffer, 0, TEST_BUFFER_SIZE);
   Quad().AtDepth(1.0).ColorRGBA(255, 255, 255, 255).Draw();
-  CGX_DoEfbCopyTex(0, 0, 100, 100, 0x6 /*RGBA8*/, false, test_buffer);
+  CGX_DoEfbCopyTex(0, 0, 100, 100, test_buffer);
   CGX_ForcePipelineFlush();
   CGX_WaitForGpuToFinish();
 
