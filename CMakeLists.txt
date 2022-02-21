@@ -28,7 +28,7 @@ function(add_hwtest)
     set(executable_name ${add_hwtest_MODULE}_${add_hwtest_TEST})
 
     add_executable(${executable_name} ${add_hwtest_FILES})
-    target_link_libraries(${executable_name} hwtests_common wiiuse bte fat ogc m)
+    target_link_libraries(${executable_name} hwtests_common fmt::fmt wiiuse bte fat ogc m)
     add_custom_target(run_${executable_name} sh ${CMAKE_SOURCE_DIR}/run.sh ${executable_name}${CMAKE_EXECUTABLE_SUFFIX})
     add_dependencies(run_${executable_name} ${executable_name})
     add_dependencies(run run_${executable_name})
@@ -36,6 +36,7 @@ endfunction()
 
 include_directories(./)
 
+add_subdirectory(Externals/fmt EXCLUDE_FROM_ALL)
 add_subdirectory(common)
 add_subdirectory(cputest)
 add_subdirectory(gxtest)
