@@ -68,7 +68,7 @@ void CoordinatePrecisionTest()
     u8 expectation = (xpos <= 0.583328247070f) ? 255 : 0;
     int subsample_index = (int)(xpos * 12.0f) % 12;
     DO_TEST(result.r == expectation,
-            "Incorrect rasterization (result=%d,expected=%d,screencoord=%.6f,subsample_index=%d)",
+            "Incorrect rasterization (result={},expected={},screencoord={:.6f},subsample_index={})",
             result.r, expectation, xpos, subsample_index);
   }
 
@@ -117,7 +117,7 @@ void CoordinatePrecisionTest()
     u8 expectation = (xpos == 0.583297669888f || xpos == 0.583328306675f) ? 0 : 255;
     int subsample_index = (int)(xpos * 12.0f) % 12;
     DO_TEST(result.r == expectation,
-            "Incorrect rasterization (result=%d,expected=%d,screencoord=%.12f,subsample_index=%d)",
+            "Incorrect rasterization (result={},expected={},screencoord={:.12f},subsample_index={})",
             result.r, expectation, xpos, subsample_index);
   }
 
@@ -154,7 +154,7 @@ void CoordinatePrecisionTest()
 
     int expectation = (xpos >= -2.0) ? 255 : 0;
     DO_TEST(result.r == expectation,
-            "Incorrect guardband clipping (result=%d,expected=%d,xpos=%.10f)", result.r,
+            "Incorrect guardband clipping (result={},expected={},xpos={:.10f})", result.r,
             expectation, xpos);
   };
 

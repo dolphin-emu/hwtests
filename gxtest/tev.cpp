@@ -85,7 +85,7 @@ void TevCombinerTest()
 
         int result = GXTest::GetTevOutput(genmode, cc, ac).r;
 
-        DO_TEST(result == tevreg.red, "Got %d, expected %d", result, (s32)tevreg.red);
+        DO_TEST(result == tevreg.red, "Got {}, expected {}", result, tevreg.red);
       }
       else
       {
@@ -106,7 +106,7 @@ void TevCombinerTest()
 
         int expected = (((tevreg.red + 1) >> 2) & 0xFF) << 2;
         expected = expected | (expected >> 6);
-        DO_TEST(result == expected, "Run %d: Got %d, expected %d", (int)tevreg.red, result,
+        DO_TEST(result == expected, "Run {}: Got {}, expected {}", tevreg.red, result,
                 expected);
       }
     }
@@ -165,9 +165,9 @@ void TevCombinerTest()
     int result = GXTest::GetTevOutput(genmode, cc, ac).r;
 
     int expected = TevCombinerExpectation(a, b, c, d, cc.shift, cc.bias, cc.op, cc.clamp);
-    DO_TEST(result == expected, "Mismatch on a=%d, b=%d, c=%d, d=%d, shift=%d, bias=%d, op=%d, "
-                                "clamp=%d: expected %d, got %d",
-            a, b, c, d, (u32)cc.shift, (u32)cc.bias, (u32)cc.op, (u32)cc.clamp, expected, result);
+    DO_TEST(result == expected, "Mismatch on a={}, b={}, c={}, d={}, shift={}, bias={}, op={}, "
+                                "clamp={}: expected {}, got {}",
+            a, b, c, d, u32(cc.shift.Value()), u32(cc.bias.Value()), u32(cc.op.Value()), cc.clamp, expected, result);
 
     WPAD_ScanPads();
 
@@ -228,7 +228,7 @@ void TevCombinerTest()
 
     int result = GXTest::GetTevOutput(genmode, cc, ac).a;
     int expected = (i == 1) ? 255 : 0;
-    DO_TEST(result == expected, "Mismatch on run %d: expected %d, got %d", i, expected, result);
+    DO_TEST(result == expected, "Mismatch on run {}: expected {}, got {}", i, expected, result);
   }
 
   END_TEST();
@@ -342,7 +342,7 @@ void KonstTest()
         10,  60,  110, 160, 20,  70, 120, 170, 30, 80, 130, 180, 40, 90, 140, 190,
     };
 
-    DO_TEST(expected[step] == result.r, "konst test failed; actual %d, expected %d", result.r,
+    DO_TEST(expected[step] == result.r, "konst test failed; actual {}, expected {}", result.r,
             expected[step]);
 
     GXTest::DebugDisplayEfbContents();
@@ -375,7 +375,7 @@ void KonstTest()
 
     GXTest::Vec4<u8> result = GXTest::ReadTestBuffer(test_x, test_y, 200);
 
-    DO_TEST(result.r == 128, "TEVCOLORARG_HALF test failed; actual %d", result.r);
+    DO_TEST(result.r == 128, "TEVCOLORARG_HALF test failed; actual {}", result.r);
 
     GXTest::DebugDisplayEfbContents();
   }

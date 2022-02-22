@@ -2,30 +2,37 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
+#pragma once
+
 #include <network.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <fmt/format.h>
 
-#pragma once
+#include "common/FormatUtil.h"
 
 #define SERVER_PORT 16784
 
 #define START_TEST() privStartTest(__FILE__, __LINE__)
 #define DO_TEST(condition, fail_msg, ...)                                                          \
-  privDoTest(condition, __FILE__, __LINE__, fail_msg, ##__VA_ARGS__)
+  privDoTest<Common::CountFmtReplacementFields(fail_msg)>(condition, __FILE__, __LINE__,           \
+                                                          FMT_STRING(fail_msg), ##__VA_ARGS__)
 #define END_TEST() privEndTest()
-#define SIMPLE_TEST()
 
 // private testing functions. Don't use these, but use the above macros, instead.
 void privStartTest(const char* file, int line);
-void privDoTest(bool condition, const char* file, int line, const char* fail_msg, ...)
-#ifndef _MSC_VER
-    __attribute__((__format__(printf, 4, 5)))
-#endif
-    ;
+void privTestPassed();
+void privTestFailed(const char* file, int line, const std::string& fail_msg);
+template <std::size_t NumFields, typename... Args>
+void privDoTest(bool condition, const char* file, int line, fmt::format_string<Args...> fail_msg, Args&&... args)
+{
+  static_assert(NumFields == sizeof...(args));
+  if (condition)
+    privTestPassed();
+  else
+    privTestFailed(file, line, fmt::format(fail_msg, std::forward<Args>(args)...));
+}
 void privEndTest();
-// TODO: Not implemented, yet
-// void privSimpleTest(bool condition, const char* file, int line, const char* fail_msg, ...);
 
 void network_init();
 void network_shutdown();

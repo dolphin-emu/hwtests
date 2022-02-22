@@ -84,7 +84,7 @@ void LightingTest()
 
     GXTest::Vec4<u8> result = GXTest::ReadTestBuffer(test_x, test_y, 200);
     int expected = (matcolor * (ambcolor + (ambcolor >> 7))) >> 8;
-    DO_TEST(result.r == expected, "lighting test failed at amb %d mat %d actual %d", ambcolor,
+    DO_TEST(result.r == expected, "lighting test failed at amb {} mat {} actual {}", ambcolor,
             matcolor, result.r);
 
     GXTest::DebugDisplayEfbContents();

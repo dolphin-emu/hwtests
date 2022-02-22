@@ -15,9 +15,9 @@ static void lwzTest()
     u32 result = 0;
     u32 address = (u32)&values[i];
     asm("lwz %0, 0(%1)" : "=r"(result) : "r"(address));
-    DO_TEST(result == values[i], "lwz(%d):\n"
-                                 "\tgot %d\n"
-                                 "\texpected %d",
+    DO_TEST(result == values[i], "lwz({}):\n"
+                                 "\tgot {}\n"
+                                 "\texpected {}",
             i, result, values[i]);
   }
   END_TEST();
@@ -37,13 +37,13 @@ static void lwzuTest()
     u32 result = 0;                                                                                \
     u32 address = (u32)&values[0];                                                                 \
     asm("lwzu %0, " #offset "(%1)" : "=r"(result), "+r"(address));                                 \
-    DO_TEST(result == values[index], "lwzu(%d):\n"                                                 \
-                                     "\tgot %d\n"                                                  \
-                                     "\texpected %d",                                              \
+    DO_TEST(result == values[index], "lwzu({}):\n"                                                 \
+                                     "\tgot {}\n"                                                  \
+                                     "\texpected {}",                                              \
             index, result, values[index]);                                                         \
-    DO_TEST(address == ((u32)&values[0] + offset), "lwzu(%d):\n"                                   \
-                                                   "\tgot 0x%08x\n"                                \
-                                                   "\texpected 0x%08x",                            \
+    DO_TEST(address == ((u32)&values[0] + offset), "lwzu({}):\n"                                   \
+                                                   "\tgot 0x{:08x}\n"                              \
+                                                   "\texpected 0x{:08x}",                          \
             index, address, ((u32)&values[0] + offset));                                           \
   } while (0)
 
@@ -68,9 +68,9 @@ static void lwzxTest()
     u32 address = (u32)&values[0];
     u32 offset = (u32)&values[i] - address;
     asm("lwzx %0, %1, %2" : "=r"(result), "+r"(offset) : "r"(address));
-    DO_TEST(result == values[i], "lwzx(%d):\n"
-                                 "\tgot %d\n"
-                                 "\texpected %d",
+    DO_TEST(result == values[i], "lwzx({}):\n"
+                                 "\tgot {}\n"
+                                 "\texpected {}",
             i, result, values[i]);
   }
   END_TEST();
@@ -90,13 +90,13 @@ static void lwzuxTest()
     u32 address = (u32)&values[0];
     u32 offset = (u32)&values[i] - address;
     asm("lwzux %0, %1, %2" : "=r"(result), "+r"(offset) : "r"(address));
-    DO_TEST(result == values[i], "lwzux(%d):\n"
-                                 "\tgot %d\n"
-                                 "\texpected %d",
+    DO_TEST(result == values[i], "lwzux({}):\n"
+                                 "\tgot {}\n"
+                                 "\texpected {}",
             i, result, values[i]);
-    DO_TEST(offset == (u32)&values[i], "lwzux(%d):\n"
-                                       "\tgot 0x%08x\n"
-                                       "\texpected 0x%08x",
+    DO_TEST(offset == (u32)&values[i], "lwzux({}):\n"
+                                       "\tgot 0x{:08x}\n"
+                                       "\texpected 0x{:08x}",
             i, offset, (u32)&values[i]);
   }
   END_TEST();
@@ -115,9 +115,9 @@ static void lhzTest()
     u16 result = 0;
     u32 address = (u32)&values[i];
     asm("lhz %0, 0(%1)" : "=r"(result) : "r"(address));
-    DO_TEST(result == values[i], "lhz(%d):\n"
-                                 "\tgot %d\n"
-                                 "\texpected %d",
+    DO_TEST(result == values[i], "lhz({}):\n"
+                                 "\tgot {}\n"
+                                 "\texpected {}",
             i, result, values[i]);
   }
   END_TEST();
@@ -137,9 +137,9 @@ static void lhzxTest()
     u32 address = (u32)&values[0];
     u32 offset = (u32)&values[i] - address;
     asm("lhzx %0, %1, %2" : "=r"(result) : "r"(address), "r"(offset));
-    DO_TEST(result == values[i], "lhzx(%d):\n"
-                                 "\tgot %d\n"
-                                 "\texpected %d",
+    DO_TEST(result == values[i], "lhzx({}):\n"
+                                 "\tgot {}\n"
+                                 "\texpected {}",
             i, result, values[i]);
   }
   END_TEST();
@@ -159,13 +159,13 @@ static void lhzuTest()
     u16 result = 0;                                                                                \
     u32 address = (u32)&values[0];                                                                 \
     asm("lhzu %0, " #offset "(%1)" : "=r"(result), "+r"(address));                                 \
-    DO_TEST(result == values[index], "lhzu(%d):\n"                                                 \
-                                     "\tgot %d\n"                                                  \
-                                     "\texpected %d",                                              \
+    DO_TEST(result == values[index], "lhzu({}):\n"                                                 \
+                                     "\tgot {}\n"                                                  \
+                                     "\texpected {}",                                              \
             index, result, values[index]);                                                         \
-    DO_TEST(address == ((u32)&values[0] + offset), "lhzu(%d):\n"                                   \
-                                                   "\tgot 0x%08x\n"                                \
-                                                   "\texpected 0x%08x",                            \
+    DO_TEST(address == ((u32)&values[0] + offset), "lhzu({}):\n"                                   \
+                                                   "\tgot 0x{:08x}\n"                              \
+                                                   "\texpected 0x{:08x}",                          \
             index, address, ((u32)&values[0] + offset));                                           \
   } while (0)
 
@@ -191,13 +191,13 @@ static void lhzuxTest()
     u32 address = (u32)&values[0];
     u32 offset = (u32)&values[i] - address;
     asm("lhzux %0, %1, %2" : "=r"(result), "+r"(offset) : "r"(address));
-    DO_TEST(result == values[i], "lhzux(%d):\n"
-                                 "\tgot %d\n"
-                                 "\texpected %d",
+    DO_TEST(result == values[i], "lhzux({}):\n"
+                                 "\tgot {}\n"
+                                 "\texpected {}",
             i, result, values[i]);
-    DO_TEST(offset == (u32)&values[i], "lhzux(%d):\n"
-                                       "\tgot 0x%08x\n"
-                                       "\texpected 0x%08x",
+    DO_TEST(offset == (u32)&values[i], "lhzux({}):\n"
+                                       "\tgot 0x{:08x}\n"
+                                       "\texpected 0x{:08x}",
             i, offset, (u32)&values[i]);
   }
   END_TEST();
@@ -218,9 +218,9 @@ static void lhaTest()
     u32 address = (u32)&values[0];                                                                 \
     u32 expected = (u32)(s32)(s16)values[index];                                                   \
     asm("lha %0, " #offset "(%1)" : "=r"(result), "+r"(address));                                  \
-    DO_TEST(result == expected, "lha(%d):\n"                                                       \
-                                "\tgot %d\n"                                                       \
-                                "\texpected %d",                                                   \
+    DO_TEST(result == expected, "lha({}):\n"                                                       \
+                                "\tgot {}\n"                                                       \
+                                "\texpected {}",                                                   \
             index, result, expected);                                                              \
   } while (0)
 
@@ -248,9 +248,9 @@ static void lhaxTest()
     u32 offset = (u32)&values[i] - address;
     u32 expected = (u32)(s32)(s16)values[i];
     asm("lhax %0, %1, %2" : "=r"(result) : "r"(address), "r"(offset));
-    DO_TEST(result == expected, "lhax(%d):\n"
-                                "\tgot %d\n"
-                                "\texpected %d",
+    DO_TEST(result == expected, "lhax({}):\n"
+                                "\tgot {}\n"
+                                "\texpected {}",
             i, result, expected);
   }
   END_TEST();
@@ -271,13 +271,13 @@ static void lhauTest()
     u32 address = (u32)&values[0];                                                                 \
     u32 expected = (u32)(s32)(s16)values[index];                                                   \
     asm("lhau %0, " #offset "(%1)" : "=r"(result), "+r"(address));                                 \
-    DO_TEST(result == expected, "lhau(%d):\n"                                                      \
-                                "\tgot %d\n"                                                       \
-                                "\texpected %d",                                                   \
+    DO_TEST(result == expected, "lhau({}):\n"                                                      \
+                                "\tgot {}\n"                                                       \
+                                "\texpected {}",                                                   \
             index, result, expected);                                                              \
-    DO_TEST(address == ((u32)&values[0] + offset), "lhau(%d):\n"                                   \
-                                                   "\tgot 0x%08x\n"                                \
-                                                   "\texpected 0x%08x",                            \
+    DO_TEST(address == ((u32)&values[0] + offset), "lhau({}):\n"                                   \
+                                                   "\tgot 0x{:08x}\n"                              \
+                                                   "\texpected 0x{:08x}",                          \
             index, address, ((u32)&values[0] + offset));                                           \
   } while (0)
 
@@ -305,13 +305,13 @@ static void lhauxTest()
     u32 offset = (u32)&values[i] - address;
     u32 expected = (u32)(s32)(s16)values[i];
     asm("lhaux %0, %1, %2" : "=r"(result), "+r"(address) : "r"(offset));
-    DO_TEST(result == expected, "lhaux(%d):\n"
-                                "\tgot %d\n"
-                                "\texpected %d",
+    DO_TEST(result == expected, "lhaux({}):\n"
+                                "\tgot {}\n"
+                                "\texpected {}",
             i, result, expected);
-    DO_TEST(address == ((u32)&values[0] + offset), "lhaux(%d):\n"
-                                                   "\tgot 0x%08x\n"
-                                                   "\texpected 0x%08x",
+    DO_TEST(address == ((u32)&values[0] + offset), "lhaux({}):\n"
+                                                   "\tgot 0x{:08x}\n"
+                                                   "\texpected 0x{:08x}",
             i, offset, ((u32)&values[0] + offset));
   }
   END_TEST();
@@ -330,9 +330,9 @@ static void lbzTest()
     u8 result = 0;
     u32 address = (u32)&values[i];
     asm("lbz %0, 0(%1)" : "=r"(result) : "r"(address));
-    DO_TEST(result == values[i], "lbz(%d):\n"
-                                 "\tgot %d\n"
-                                 "\texpected %d",
+    DO_TEST(result == values[i], "lbz({}):\n"
+                                 "\tgot {}\n"
+                                 "\texpected {}",
             i, result, values[i]);
   }
   END_TEST();
@@ -352,9 +352,9 @@ static void lbzxTest()
     u32 address = (u32)&values[0];
     u32 offset = (u32)&values[i] - address;
     asm("lbzx %0, %1, %2" : "=r"(result) : "r"(address), "r"(offset));
-    DO_TEST(result == values[i], "lbzx(%d):\n"
-                                 "\tgot %d\n"
-                                 "\texpected %d",
+    DO_TEST(result == values[i], "lbzx({}):\n"
+                                 "\tgot {}\n"
+                                 "\texpected {}",
             i, result, values[i]);
   }
   END_TEST();
@@ -373,13 +373,13 @@ static void lbzuTest()
     u8 result = 0;
     u32 address = (u32)&values[i];
     asm("lbzu %0, 0(%1)" : "=r"(result), "+r"(address));
-    DO_TEST(result == values[i], "lbzu(%d):\n"
-                                 "\tgot %d\n"
-                                 "\texpected %d",
+    DO_TEST(result == values[i], "lbzu({}):\n"
+                                 "\tgot {}\n"
+                                 "\texpected {}",
             i, result, values[i]);
-    DO_TEST(address == (u32)&values[i], "lbzu(%d):\n"
-                                        "\tgot 0x%08x\n"
-                                        "\texpected 0x%08x",
+    DO_TEST(address == (u32)&values[i], "lbzu({}):\n"
+                                        "\tgot 0x{:08x}\n"
+                                        "\texpected 0x{:08x}",
             i, address, (u32)&values[i]);
   }
   END_TEST();
@@ -399,13 +399,13 @@ static void lbzuxTest()
     u32 address = (u32)&values[0];
     u32 offset = (u32)&values[i] - address;
     asm("lbzux %0, %1, %2" : "=r"(result), "+r"(offset) : "r"(address));
-    DO_TEST(result == values[i], "lbzux(%d):\n"
-                                 "\tgot %d\n"
-                                 "\texpected %d",
+    DO_TEST(result == values[i], "lbzux({}):\n"
+                                 "\tgot {}\n"
+                                 "\texpected {}",
             i, result, values[i]);
-    DO_TEST(offset == (u32)&values[i], "lbzux(%d):\n"
-                                       "\tgot 0x%08x\n"
-                                       "\texpected 0x%08x",
+    DO_TEST(offset == (u32)&values[i], "lbzux({}):\n"
+                                       "\tgot 0x{:08x}\n"
+                                       "\texpected 0x{:08x}",
             i, offset, (u32)&values[i]);
   }
   END_TEST();

@@ -29,25 +29,25 @@ static void NiTest()
     const bool compare_expected = inputs_expected_flushed;
     const bool compare_result = zero >= smallest_denormal;
     DO_TEST(compare_result == compare_expected,
-            "Compare zero and denormal (NI=%d):\n"
-            "     got %d\n"
-            "expected %d",
+            "Compare zero and denormal (NI={}):\n"
+            "     got {}\n"
+            "expected {}",
             ni, compare_result, compare_expected);
 
     const u64 mul_expected = Common::BitCast<u64>(inputs_expected_flushed ? zero : product);
     const u64 mul_result = Common::BitCast<u64>(smallest_denormal * large);
     DO_TEST(mul_result == mul_expected,
-            "Multiply denormal and large number (NI=%d):\n"
-            "     got 0x%016llx\n"
-            "expected 0x%016llx",
+            "Multiply denormal and large number (NI={}):\n"
+            "     got 0x{:016x}\n"
+            "expected 0x{:016x}",
             ni, mul_result, mul_expected);
 
     const u64 div_expected = Common::BitCast<u64>(outputs_expected_flushed ? zero : smallest_denormal);
     const u64 div_result = Common::BitCast<u64>(smallest_normal / divisor);
     DO_TEST(div_result == div_expected,
-            "Divide smallest normal by other normal (NI=%d):\n"
-            "     got 0x%016llx\n"
-            "expected 0x%016llx",
+            "Divide smallest normal by other normal (NI={}):\n"
+            "     got 0x{:016x}\n"
+            "expected 0x{:016x}",
             ni, div_result, div_expected);
   }
 

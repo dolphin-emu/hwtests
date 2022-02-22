@@ -23,10 +23,10 @@ static int GetCarry(int value, int shift)
           "addze  %1, %1;"                                                                         \
           : "+r"(output), "+r"(carry)                                                              \
           : "i"(shift));                                                                           \
-      DO_TEST(carry == GetCarry(input, shift), "(%x >> %d), got carry = %x, expected %x", input,   \
-              shift, carry, GetCarry(input, shift));                                               \
-      DO_TEST(output == (input >> shift), "(%x >> %d), got %x, expected %x", input, shift, output, \
-              (input >> shift));                                                                   \
+      DO_TEST(carry == GetCarry(input, shift), "({:x} >> {}), got carry = {:x}, expected {:x}",    \
+              input, shift, carry, GetCarry(input, shift));                                        \
+      DO_TEST(output == (input >> shift), "({:x} >> {}), got {:x}, expected {:x}", input, shift,   \
+              output, (input >> shift));                                                           \
     }                                                                                              \
   } while (0)
 

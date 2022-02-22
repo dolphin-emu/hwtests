@@ -218,12 +218,12 @@ void ClipTest()
 
     GXTest::Vec4<u8> result = GXTest::ReadTestBuffer(test_x, test_y, 200);
     if (expect_quad_to_be_drawn)
-      DO_TEST(result.r == 0xff, "Clipping test failed at step %d (expected quad to be shown at "
-                                "pixel (%d, %d), but it was not)",
+      DO_TEST(result.r == 0xff, "Clipping test failed at step {} (expected quad to be shown at "
+                                "pixel ({}, {}), but it was not)",
               step, test_x, test_y);
     else
-      DO_TEST(result.r == 0x00, "Clipping test failed at step %d (expected quad to be hidden at "
-                                "pixel (%d, %d), but it was not)",
+      DO_TEST(result.r == 0x00, "Clipping test failed at step {} (expected quad to be hidden at "
+                                "pixel ({}, {}), but it was not)",
               step, test_x, test_y);
 
     GXTest::DebugDisplayEfbContents();
