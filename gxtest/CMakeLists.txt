@@ -1,5 +1,6 @@
 add_hwtest(MODULE gxtest TEST bitfield FILES bitfield.cpp cgx.cpp util.cpp)
 add_hwtest(MODULE gxtest TEST clipping FILES clipping.cpp cgx.cpp util.cpp)
+add_hwtest(MODULE gxtest TEST intensity FILES intensity.cpp cgx.cpp util.cpp)
 add_hwtest(MODULE gxtest TEST lighting FILES lighting.cpp cgx.cpp util.cpp)
 add_hwtest(MODULE gxtest TEST rasterization FILES rasterization.cpp cgx.cpp util.cpp)
 add_hwtest(MODULE gxtest TEST tev FILES tev.cpp cgx.cpp util.cpp)
