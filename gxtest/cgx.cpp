@@ -15,6 +15,7 @@
 #include "gxtest/BPMemory.h"
 #include "gxtest/CPMemory.h"
 #include "gxtest/XFMemory.h"
+#include "gxtest/util.h"
 
 #include "cgx.h"
 
@@ -241,4 +242,61 @@ void CGX_WaitForGpuToFinish()
     LWP_ThreadSleep(_cgxwaitfinish);
 
   _CPU_ISR_Restore(level);
+}
+
+void CGX_PEPokeAlphaMode(CompareMode func, u8 threshold)
+{
+  GX_PokeAlphaMode(static_cast<u8>(func), threshold);
+}
+void CGX_PEPokeAlphaUpdate(bool enable)
+{
+  GX_PokeAlphaUpdate(enable);
+}
+void CGX_PEPokeColorUpdate(bool enable)
+{
+  GX_PokeColorUpdate(enable);
+}
+void CGX_PEPokeDither(bool dither)
+{
+  GX_PokeDither(dither);
+}
+void CGX_PEPokeBlendMode(u8 type, SrcBlendFactor src_fact, DstBlendFactor dst_fact, LogicOp op)
+{
+  GX_PokeBlendMode(type, static_cast<u8>(src_fact), static_cast<u8>(dst_fact), static_cast<u8>(op));
+}
+void CGX_PEPokeAlphaRead(u8 mode)
+{
+  GX_PokeAlphaRead(mode);
+}
+void CGX_PEPokeDstAlpha(bool enable, u8 a)
+{
+  GX_PokeDstAlpha(enable, a);
+}
+void CGX_PEPokeZMode(bool comp_enable, CompareMode func, bool update_enable)
+{
+  GX_PokeZMode(comp_enable, static_cast<u8>(func), update_enable);
+}
+
+// The pixel_fmt arg is unused currently but exists for future compatibility
+// if we need to do different types of reads for different formats
+GXTest::Vec4<u8> CGX_PeekARGB(u16 x, u16 y, [[maybe_unused]] PixelFormat pixel_fmt)
+{
+  GXColor gx_color;
+  GX_PeekARGB(x, y, &gx_color);
+  return {.r = gx_color.r, .g = gx_color.g, .b = gx_color.b, .a = gx_color.a};
+}
+u32 CGX_PeekZ(u16 x, u16 y, [[maybe_unused]] PixelFormat pixel_fmt)
+{
+  u32 z;
+  GX_PeekZ(x, y, &z);
+  return z;
+}
+void CGX_PokeARGB(u16 x, u16 y, const GXTest::Vec4<u8>& color, [[maybe_unused]] PixelFormat pixel_fmt)
+{
+  GXColor gx_color{.r = color.r, .g = color.g, .b = color.b, .a = color.a};
+  GX_PokeARGB(x, y, gx_color);
+}
+void CGX_PokeZ(u16 x, u16 y, u32 z, [[maybe_unused]] PixelFormat pixel_fmt)
+{
+  GX_PokeZ(x, y, z);
 }

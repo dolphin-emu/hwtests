@@ -14,9 +14,15 @@
 #include <ogc/gx.h>
 
 #include "common/CommonTypes.h"
-#include "BPMemory.h"
+#include "gxtest/BPMemory.h"
 
 #pragma once
+
+namespace GXTest
+{
+template <typename T>
+union Vec4;
+}  // namespace
 
 /*typedef float f32;
 
@@ -90,3 +96,17 @@ void CGX_DoEfbCopyXfb(u16 left, u16 top, u16 width, u16 src_height, u16 dst_heig
 void CGX_ForcePipelineFlush();
 
 void CGX_WaitForGpuToFinish();
+
+void CGX_PEPokeAlphaMode(CompareMode func, u8 threshold);
+void CGX_PEPokeAlphaUpdate(bool enable);
+void CGX_PEPokeColorUpdate(bool enable);
+void CGX_PEPokeDither(bool dither);
+void CGX_PEPokeBlendMode(u8 type, SrcBlendFactor src_fact, DstBlendFactor dst_fact, LogicOp op);
+void CGX_PEPokeAlphaRead(u8 mode);
+void CGX_PEPokeDstAlpha(bool enable, u8 a);
+void CGX_PEPokeZMode(bool comp_enable, CompareMode func, bool update_enable);
+
+GXTest::Vec4<u8> CGX_PeekARGB(u16 x, u16 y, PixelFormat pixel_fmt);
+u32 CGX_PeekZ(u16 x, u16 y, PixelFormat pixel_fmt);
+void CGX_PokeARGB(u16 x, u16 y, const GXTest::Vec4<u8>& color, PixelFormat pixel_fmt);
+void CGX_PokeZ(u16 x, u16 y, u32 z, PixelFormat pixel_fmt);
