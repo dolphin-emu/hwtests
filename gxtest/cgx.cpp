@@ -213,7 +213,7 @@ void CGX_ForcePipelineFlush()
   wgPipe->U32 = 0;
 }
 
-static void __CGXFinishInterruptHandler(u32 irq, void* ctx)
+static void __CGXFinishInterruptHandler([[maybe_unused]] u32 irq, [[maybe_unused]] void* ctx)
 {
   _peReg[5] = (_peReg[5] & ~0x08) | 0x08;
   _cgxfinished = 1;
