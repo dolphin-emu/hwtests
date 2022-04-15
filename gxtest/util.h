@@ -8,6 +8,8 @@
 
 namespace GXTest
 {
+extern u32* test_buffer;
+
 // Four component vector with arbitrary base type
 template <typename T>
 union Vec4

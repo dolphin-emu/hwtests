@@ -17,7 +17,7 @@
 namespace GXTest
 {
 #define TEST_BUFFER_SIZE (640 * 528 * 4)
-static u32* test_buffer;
+u32* test_buffer;
 
 #ifdef ENABLE_DEBUG_DISPLAY
 static u32 fb = 0;
