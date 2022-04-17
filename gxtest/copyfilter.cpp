@@ -56,9 +56,10 @@ GXTest::Vec4<u8> GenerateEFBColor(u16 x, u16 y)
   return {r, g, b, a};
 }
 
-u32 GenerateEFBDepth([[maybe_unused]] u16 x, u16 y)
+static u32 GenerateEFBDepth(u16 x, u16 y)
 {
-  return y < 4 ? 0x123456 : 0x789abc;
+  auto color = GenerateEFBColor(x, y);
+  return (u32(color.r) << 16) | (u32(color.g) << 8) | color.b;
 }
 
 static void SetPixelFormat(PixelFormat pixel_fmt)
@@ -72,16 +73,15 @@ static void SetPixelFormat(PixelFormat pixel_fmt)
 
 static void FillEFB(PixelFormat pixel_fmt)
 {
-  SetPixelFormat(pixel_fmt);
-  CGX_WaitForGpuToFinish();
+  // Don't set the format to Z24 here since we need RGB8 for our EFB copy+z-texture hack below
+  SetPixelFormat(pixel_fmt == PixelFormat::Z24 ? PixelFormat::RGB8_Z24 : pixel_fmt);
 
-  // Needed for clear to work properly. GX_CopyTex ors with 0xf, but the top bit indicating update also must be set
-  CGX_LOAD_BP_REG(BPMEM_ZMODE << 24 | 0x1f);
-  CGX_LOAD_BP_REG(BPMEM_CLEAR_Z << 24 | 0x123456);
-  // For some reason, Z isn't cleared properly if the height isn't set to 4 (3 inclusive)
-  GXTest::CopyToTestBuffer(0, 0, 255, 3, {.clear = true});
-  CGX_LOAD_BP_REG(BPMEM_CLEAR_Z << 24 | 0x789abc);
-  GXTest::CopyToTestBuffer(0, 4, 255, 7, {.clear = true});
+  ZMode zmode{.hex = BPMEM_ZMODE << 24};
+  zmode.testenable = true;
+  zmode.func = CompareMode::Always;
+  zmode.updateenable = true;
+  CGX_LOAD_BP_REG(zmode.hex);
+
   CGX_WaitForGpuToFinish();
 
   CGX_PEPokeDither(false);
@@ -89,7 +89,7 @@ static void FillEFB(PixelFormat pixel_fmt)
   CGX_PEPokeColorUpdate(true);
   CGX_PEPokeBlendMode(GX_BM_NONE, SrcBlendFactor::Zero, DstBlendFactor::Zero, LogicOp::Set);
   CGX_PEPokeAlphaRead(GX_READ_NONE);
-  CGX_PEPokeZMode(false, CompareMode::Always, true);
+  CGX_PEPokeZMode(true, CompareMode::Always, true);
 
   // For some reason GX_PokeARGB hangs when using this format
   if (pixel_fmt == PixelFormat::RGB565_Z16)
@@ -103,6 +103,126 @@ static void FillEFB(PixelFormat pixel_fmt)
       // GX_PokeZ doesn't seem to work at all
       // CGX_PokeZ(x, y, GenerateEFBDepth(x, y), pixel_fmt);
     }
+  }
+
+  if (pixel_fmt == PixelFormat::Z24)
+  {
+    // HACK: Since GX_PokeZ doesn't seem to work, we instead use an EFB copy and then
+    // draw over it using the z-texture feature to set the depth buffer.
+    SetCopyFilter(0, 64, 0);
+    // This value should be overridden, but it's recognizable if it shows up
+    CGX_LOAD_BP_REG(BPMEM_CLEAR_Z << 24 | 123456);
+    GXTest::CopyToTestBuffer(0, 0, 255, 7, {.clear = true});
+    GX_InvalidateTexAll();
+
+    AlphaTest alpha{.hex = BPMEM_ALPHACOMPARE << 24};
+    alpha.comp0 = CompareMode::Always;
+    alpha.comp1 = CompareMode::Always;
+    alpha.logic = AlphaTestOp::Or;
+    CGX_LOAD_BP_REG(alpha.hex);
+
+    GenMode genmode{.hex = BPMEM_GENMODE << 24};
+    genmode.numtexgens = 1;
+    genmode.numtevstages = 1 - 1;
+    CGX_LOAD_BP_REG(genmode.hex);
+
+    BlendMode blend{.hex = BPMEM_BLENDMODE << 24};
+    blend.colorupdate = true;
+    blend.alphaupdate = false;
+    CGX_LOAD_BP_REG(blend.hex);
+
+    CGX_BEGIN_LOAD_XF_REGS(0x1008, 1);  // XFMEM_VTXSPECS
+    wgPipe->U32 = 1<<4;  // 1 texture coordinate
+    CGX_BEGIN_LOAD_XF_REGS(0x1009, 1);  // XFMEM_SETNUMCHAN
+    wgPipe->U32 = 0;
+    CGX_BEGIN_LOAD_XF_REGS(0x103f, 1);  // XFMEM_SETNUMTEXGENS
+    wgPipe->U32 = 1;
+    CGX_BEGIN_LOAD_XF_REGS(0x1040, 1);  // XFMEM_SETTEXMTXINFO
+    wgPipe->U32 = 0x280;  // regular texgen for tex0
+
+    CGX_LOAD_BP_REG(BPMEM_TX_SETMODE0 << 24);
+    CGX_LOAD_BP_REG(BPMEM_TX_SETMODE1 << 24);
+    TexImage0 ti0{.hex = BPMEM_TX_SETIMAGE0 << 24};
+    ti0.width = 256 - 1;
+    ti0.height = 8 - 1;
+    ti0.format = TextureFormat::RGBA8;
+    CGX_LOAD_BP_REG(ti0.hex);
+    // Assume that TexImage1 and TexImage2 (tmem-related)
+    // are set properly by libogc's init
+    TexImage3 ti3{.hex = BPMEM_TX_SETIMAGE3 << 24};
+    ti3.image_base = MEM_VIRTUAL_TO_PHYSICAL(GXTest::test_buffer) >> 5;
+    CGX_LOAD_BP_REG(ti3.hex);
+
+    CGX_LOAD_BP_REG(BPMEM_BIAS << 24);  // ztex bias is 0
+    ZTex2 ztex2{.hex = BPMEM_ZTEX2 << 24};
+    ztex2.type = ZTexFormat::U24;
+    ztex2.op = ZTexOp::Replace;
+    CGX_LOAD_BP_REG(ztex2.hex);
+
+    TwoTevStageOrders tref{.hex = BPMEM_TREF << 24};
+    tref.texmap0 = 0;
+    tref.texcoord0 = 0;
+    tref.enable0 = true;
+    CGX_LOAD_BP_REG(tref.hex);
+
+    TCInfo tc_s{.hex = BPMEM_SU_SSIZE << 24};
+    tc_s.scale_minus_1 = 256 - 1;
+    CGX_LOAD_BP_REG(tc_s.hex);
+    TCInfo tc_t{.hex = BPMEM_SU_TSIZE << 24};
+    tc_t.scale_minus_1 = 8 - 1;
+    CGX_LOAD_BP_REG(tc_t.hex);
+
+    // We don't care about the actual result here
+    auto tev = CGXDefault<TevStageCombiner::ColorCombiner>(0);
+    tev.d = TevColorArg::Half;
+    CGX_LOAD_BP_REG(tev.hex);
+
+    CGX_SetViewport(0.0f, 0.0f, 256.0f, 8.0f, 0.0f, 1.0f);
+
+    // Set the vertex format...
+    CGX_LOAD_CP_REG(0x50, VTXATTR_DIRECT << 9);  // VCD_LO: direct position only
+    CGX_LOAD_CP_REG(0x60, VTXATTR_DIRECT << 0);  // VCD_HI: direct texcoord0 only
+    UVAT_group0 vat0{.Hex = 0};
+    // NOTE: Using XY results in things not working for some reason.
+    // We need to supply a Z-value, even if it's not relevant for the final result.
+    vat0.PosElements = VA_TYPE_POS_XYZ;
+    vat0.PosFormat = VA_FMT_S8;
+    vat0.Tex0CoordElements = VA_TYPE_TEX_ST;
+    vat0.Tex0CoordFormat = VA_FMT_U8;
+    CGX_LOAD_CP_REG(0x70, vat0.Hex);
+    CGX_LOAD_CP_REG(0x80, 0x80000000);  // CP_VAT_REG_B: vcache enhance only
+    CGX_LOAD_CP_REG(0x90, 0);  // CP_VAT_REG_C
+
+    // Actually draw the vertices
+    GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
+    wgPipe->S8 = -1;
+    wgPipe->S8 = -1;
+    wgPipe->S8 = 1;
+    wgPipe->U8 = 0;
+    wgPipe->U8 = 1;
+
+    wgPipe->S8 = -1;
+    wgPipe->S8 = +1;
+    wgPipe->S8 = 1;
+    wgPipe->U8 = 0;
+    wgPipe->U8 = 0;
+
+    wgPipe->S8 = +1;
+    wgPipe->S8 = +1;
+    wgPipe->S8 = 1;
+    wgPipe->U8 = 1;
+    wgPipe->U8 = 0;
+
+    wgPipe->S8 = +1;
+    wgPipe->S8 = -1;
+    wgPipe->S8 = 1;
+    wgPipe->U8 = 1;
+    wgPipe->U8 = 1;
+    GX_End();
+
+    CGX_WaitForGpuToFinish();
+
+    SetPixelFormat(pixel_fmt);
   }
 }
 
