@@ -42,9 +42,9 @@ static void rlwimixTest()
       u32 valueS = values[i][1];                                                                   \
                                                                                                    \
       asm("rlwimi %0, %1, " #sh ", " #mb ", " #me : "+r"(valueA) : "r"(valueS));                   \
-      DO_TEST(valueA == computed_result, "rlwimi %08x, %08x, " #sh ", " #mb ", " #me "\n"          \
-                                         "\tgot: %08x\n"                                           \
-                                         "\texpected: %08x\n",                                     \
+      DO_TEST(valueA == computed_result, "rlwimi {:08x}, {:08x}, " #sh ", " #mb ", " #me "\n"      \
+                                         "\tgot: {:08x}\n"                                         \
+                                         "\texpected: {:08x}\n",                                   \
               values[i][0], values[i][1], valueA, computed_result);                                \
     }                                                                                              \
   } while (0)
@@ -97,9 +97,9 @@ static void rlwinmxTest()
       u32 valueS = values[i];                                                                      \
                                                                                                    \
       asm("rlwinm %0, %1, " #sh ", " #mb ", " #me : "=r"(result) : "r"(valueS));                   \
-      DO_TEST(result == computed_result, "rlwinm %08x, " #sh ", " #mb ", " #me "\n"                \
-                                         "\tgot: %08x\n"                                           \
-                                         "\texpected: %08x\n",                                     \
+      DO_TEST(result == computed_result, "rlwinm {:08x}, " #sh ", " #mb ", " #me "\n"              \
+                                         "\tgot: {:08x}\n"                                         \
+                                         "\texpected: {:08x}\n",                                   \
               values[i], result, computed_result);                                                 \
     }                                                                                              \
   } while (0)
@@ -153,9 +153,9 @@ static void rlwnmxTest()
         u32 valueS = values[i];                                                                    \
                                                                                                    \
         asm("rlwnm %0, %1, %2, " #mb ", " #me : "=r"(result) : "r"(valueS), "r"(sh));              \
-        DO_TEST(result == computed_result, "rlwnm %08x, %d, " #mb ", " #me "\n"                    \
-                                           "\tgot: %08x\n"                                         \
-                                           "\texpected: %08x\n",                                   \
+        DO_TEST(result == computed_result, "rlwnm {:08x}, {}, " #mb ", " #me "\n"                  \
+                                           "\tgot: {:08x}\n"                                       \
+                                           "\texpected: {:08x}\n",                                 \
                 values[i], sh, result, computed_result);                                           \
       }                                                                                            \
   } while (0)

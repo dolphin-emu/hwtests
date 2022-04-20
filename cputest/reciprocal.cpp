@@ -157,7 +157,7 @@ static void ReciprocalTest()
     testi = i << 32;
     expectedf = frsqrte_expected(testf);
     testf = __frsqrte(testf);
-    DO_TEST(testi == expectedi, "Bad frsqrte %lld %.10f %llx %.10f %llx", i, testf, testi,
+    DO_TEST(testi == expectedi, "Bad frsqrte {} {} {} {} {}", i, testf, testi,
             expectedf, expectedi);
     if (testi != expectedi)
       break;
@@ -165,7 +165,7 @@ static void ReciprocalTest()
     testi = i << 32;
     expectedf = fres_expected(testf);
     testf = fres_intrinsic(testf);
-    DO_TEST(testi == expectedi, "Bad fres %lld %.10f %llx %.10f %llx", i, testf, testi, expectedf,
+    DO_TEST(testi == expectedi, "Bad fres {} {} {} {} {}", i, testf, testi, expectedf,
             expectedi);
     if (testi != expectedi)
       break;

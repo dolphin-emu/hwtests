@@ -17,16 +17,26 @@ struct TestStatus
 
 static TestStatus status(NULL, 0);
 static int number_of_tests = 0;
+static long long number_of_subtests;
+static int number_of_tests_passed = 0;
+static long long number_of_subtests_passed;
 
 int client_socket;
 int server_socket;
+
+// This is for Dolphin's benefit (with OSREPORT HLE). It won't end up on screen.
+// __attribute__((weak)) is needed so that it doesn't get optimized out.
+extern "C" __attribute__((weak)) void OSReport([[maybe_unused]] const char* fmt, ...) {}
 
 void network_vprintf(const char* str, va_list args)
 {
   char buffer[4096];
   //	int len = vsnprintf(buffer, 4096, str, args);
   int len = vsprintf(buffer, str, args);
-  net_send(client_socket, buffer, len + 1, 0);
+  // NOTE: vsprintf's return value doesn't include the null terminator.
+  // But we don't want to send the null terminator over the network either.
+  net_send(client_socket, buffer, len, 0);
+  OSReport("%s", buffer);
 }
 
 void network_printf(const char* str, ...)
@@ -44,27 +54,17 @@ void privStartTest(const char* file, int line)
   number_of_tests++;
 }
 
-void privDoTest(bool condition, const char* file, int line, const char* fail_msg, ...)
+void privTestPassed()
 {
-  va_list arglist;
-  va_start(arglist, fail_msg);
-
   ++status.num_subtests;
+  ++status.num_passes;
+}
 
-  if (condition)
-  {
-    ++status.num_passes;
-  }
-  else
-  {
-    ++status.num_failures;
-
-    // TODO: vprintf forwarding doesn't seem to work?
-    network_printf("Subtest %lld failed in %s on line %d: ", status.num_subtests, file, line);
-    network_vprintf(fail_msg, arglist);
-    network_printf("\n");
-  }
-  va_end(arglist);
+void privTestFailed(const char* file, int line, const std::string& fail_msg)
+{
+  ++status.num_subtests;
+  ++status.num_failures;
+  network_printf("Subtest %lld failed in %s on line %d: %s\n", status.num_subtests, file, line, fail_msg.c_str());
 }
 
 void privEndTest()
@@ -72,17 +72,23 @@ void privEndTest()
   if (0 == status.num_failures)
   {
     network_printf("Test %d passed (%lld subtests)\n", number_of_tests, status.num_subtests);
+    number_of_tests_passed++;
   }
   else
   {
     network_printf("Test %d failed (%lld subtests, %lld failures)\n", number_of_tests,
                    status.num_subtests, status.num_failures);
   }
+  number_of_subtests += status.num_subtests;
+  number_of_subtests_passed += status.num_passes;
 }
 
-void privSimpleTest(bool condition, const char* file, int line, const char* fail_msg, ...)
+void report_test_results()
 {
-  // TODO
+  network_printf("%d tests passed out of %d; %lld subtests passed out of %lld\n",
+                 number_of_tests_passed, number_of_tests, number_of_subtests_passed, number_of_subtests);
+  if (number_of_tests_passed == number_of_tests)
+    network_printf("All tests passed\n");
 }
 
 #define SERVER_PORT 16784

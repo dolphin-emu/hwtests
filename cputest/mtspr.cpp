@@ -16,7 +16,7 @@ static void GQRUnusedBitsTest()
       "mfspr %0, 914;"
       : "=r"(output));
 
-  DO_TEST(output == expected, "got %x, expected %x", output, expected);
+  DO_TEST(output == expected, "got {:x}, expected {:x}", output, expected);
   END_TEST();
 }
 
@@ -32,7 +32,7 @@ static void XERUnusedBitsTest()
       "mfspr %0, 1;"
       : "=r"(output));
 
-  DO_TEST(output == expected, "got %x, expected %x", output, expected);
+  DO_TEST(output == expected, "got {:x}, expected {:x}", output, expected);
   END_TEST();
 }
 

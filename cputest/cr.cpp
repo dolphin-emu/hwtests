@@ -16,7 +16,7 @@ static void ClearBit(u32* n, size_t i)
   *n &= ~mask;
 }
 
-static void DoNothing(u32* expected)
+static void DoNothing([[maybe_unused]] u32* expected)
 {
 }
 
@@ -113,9 +113,9 @@ static void CRTest()
         expected >>= 28;
         result >>= 28;
 
-        DO_TEST(result == expected, "cmpwi(0x%08x), j=%d, so=%d:\n"
-                                    "     got 0x%x\n"
-                                    "expected 0x%x",
+        DO_TEST(result == expected, "cmpwi(0x{:08x}), j={}, so={}:\n"
+                                    "     got {:#x}\n"
+                                    "expected {:#x}",
                 input, j, so, result, expected);
       }
     }

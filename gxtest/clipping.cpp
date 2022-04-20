@@ -36,11 +36,11 @@ void ClipTest()
   genmode.numtevstages = 0;  // One stage
   CGX_LOAD_BP_REG(genmode.hex);
 
-  PE_CONTROL ctrl;
+  PEControl ctrl;
   ctrl.hex = BPMEM_ZCOMPARE << 24;
-  ctrl.pixel_format = PIXELFMT_RGB8_Z24;
-  ctrl.zformat = ZC_LINEAR;
-  ctrl.early_ztest = 0;
+  ctrl.pixel_format = PixelFormat::RGB8_Z24;
+  ctrl.zformat = DepthFormat::ZLINEAR;
+  ctrl.early_ztest = false;
   CGX_LOAD_BP_REG(ctrl.hex);
 
   for (int step = 0; step < 16; ++step)
@@ -52,32 +52,32 @@ void ClipTest()
     CGX_SetViewport(0.0f, 0.0f, 201.0f, 50.0f, 0.0f,
                     1.0f);  // stuff which really should not be filled
     auto cc = CGXDefault<TevStageCombiner::ColorCombiner>(0);
-    cc.d = TEVCOLORARG_RASC;
+    cc.d = TevColorArg::RasColor;
     CGX_LOAD_BP_REG(cc.hex);
     GXTest::Quad().ColorRGBA(0, 0, 0, 0xff).Draw();
 
     CGX_SetViewport(75.0f, 0.0f, 100.0f, 50.0f, 0.0f, 1.0f);  // guardband
     cc = CGXDefault<TevStageCombiner::ColorCombiner>(0);
-    cc.d = TEVCOLORARG_RASC;
+    cc.d = TevColorArg::RasColor;
     CGX_LOAD_BP_REG(cc.hex);
     GXTest::Quad().ColorRGBA(0, 0x7f, 0, 0xff).Draw();
 
     CGX_SetViewport(100.0f, 0.0f, 50.0f, 50.0f, 0.0f, 1.0f);  // viewport
     cc = CGXDefault<TevStageCombiner::ColorCombiner>(0);
-    cc.d = TEVCOLORARG_RASC;
+    cc.d = TevColorArg::RasColor;
     CGX_LOAD_BP_REG(cc.hex);
     GXTest::Quad().ColorRGBA(0, 0xff, 0, 0xff).Draw();
 
     // Now, enable testing viewport and draw the (red) testing quad
     CGX_SetViewport(100.0f, 0.0f, 50.0f, 50.0f, 0.0f, 1.0f);
 
-    cc.d = TEVCOLORARG_C0;
+    cc.d = TevColorArg::Color0;
     CGX_LOAD_BP_REG(cc.hex);
 
     auto tevreg = CGXDefault<TevReg>(1, false);  // c0
-    tevreg.red = 0xff;
-    CGX_LOAD_BP_REG(tevreg.low);
-    CGX_LOAD_BP_REG(tevreg.high);
+    tevreg.ra.red = 0xff;
+    CGX_LOAD_BP_REG(tevreg.ra.hex);
+    CGX_LOAD_BP_REG(tevreg.bg.hex);
 
     CGX_BEGIN_LOAD_XF_REGS(0x1005, 1);
     wgPipe->U32 = 0;  // 0 = enable clipping, 1 = disable clipping
@@ -218,12 +218,12 @@ void ClipTest()
 
     GXTest::Vec4<u8> result = GXTest::ReadTestBuffer(test_x, test_y, 200);
     if (expect_quad_to_be_drawn)
-      DO_TEST(result.r == 0xff, "Clipping test failed at step %d (expected quad to be shown at "
-                                "pixel (%d, %d), but it was not)",
+      DO_TEST(result.r == 0xff, "Clipping test failed at step {} (expected quad to be shown at "
+                                "pixel ({}, {}), but it was not)",
               step, test_x, test_y);
     else
-      DO_TEST(result.r == 0x00, "Clipping test failed at step %d (expected quad to be hidden at "
-                                "pixel (%d, %d), but it was not)",
+      DO_TEST(result.r == 0x00, "Clipping test failed at step {} (expected quad to be hidden at "
+                                "pixel ({}, {}), but it was not)",
               step, test_x, test_y);
 
     GXTest::DebugDisplayEfbContents();

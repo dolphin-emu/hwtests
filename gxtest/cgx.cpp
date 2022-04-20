@@ -93,24 +93,6 @@ void CGX_SetViewport(float origin_x, float origin_y, float width, float height, 
   wgPipe->F32 = far * 16777215.0f;
 }
 
-static inline void WriteMtxPS4x2(register f32 mt[3][4], register void* wgpipe)
-{
-  // Untested
-  register f32 tmp0, tmp1, tmp2, tmp3;
-
-  __asm__ __volatile__("psq_l %0,0(%4),0,0\n\
-		psq_l %1,8(%4),0,0\n\
-		psq_l %2,16(%4),0,0\n\
-		psq_l %3,24(%4),0,0\n\
-		psq_st %0,0(%5),0,0\n\
-		psq_st %1,0(%5),0,0\n\
-		psq_st %2,0(%5),0,0\n\
-		psq_st %3,0(%5),0,0"
-                       : "=&f"(tmp0), "=&f"(tmp1), "=&f"(tmp2), "=&f"(tmp3)
-                       : "b"(mt), "b"(wgpipe)
-                       : "memory");
-}
-
 void CGX_LoadPosMatrixDirect(f32 mt[3][4], u32 index)
 {
   // Untested
@@ -163,7 +145,7 @@ void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, u8 dest_format,
   coords.y = top;
   CGX_LOAD_BP_REG(coords.hex);
 
-  coords.hex = BPMEM_EFB_BR << 24;
+  coords.hex = BPMEM_EFB_WH << 24;
   coords.x = width - 1;
   coords.y = height - 1;
   CGX_LOAD_BP_REG(coords.hex);
@@ -179,8 +161,8 @@ void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, u8 dest_format,
   reg.half_scale = scale_down;
   reg.clear = clear;
   reg.intensity_fmt = copy_to_intensity;
-  reg.clamp0 = 1;
-  reg.clamp1 = 1;
+  reg.clamp_top = true;
+  reg.clamp_bottom = true;
   CGX_LOAD_BP_REG(reg.Hex);
 
   DCFlushRange(dest, GX_GetTexBufferSize(width, height, GX_TF_RGBA8, GX_FALSE, 1));
@@ -231,7 +213,7 @@ void CGX_ForcePipelineFlush()
   wgPipe->U32 = 0;
 }
 
-static void __CGXFinishInterruptHandler(u32 irq, void* ctx)
+static void __CGXFinishInterruptHandler([[maybe_unused]] u32 irq, [[maybe_unused]] void* ctx)
 {
   _peReg[5] = (_peReg[5] & ~0x08) | 0x08;
   _cgxfinished = 1;

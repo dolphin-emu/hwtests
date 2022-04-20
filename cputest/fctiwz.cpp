@@ -27,9 +27,9 @@ static void FctiwzTest()
     u64 expected = values[i][1];
     u64 result = 0;
     asm("fctiwz %0, %1" : "=f"(result) : "f"(input));
-    DO_TEST(result == expected, "fctiwz(0x%016llx):\n"
-                                "     got 0x%016llx\n"
-                                "expected 0x%016llx",
+    DO_TEST(result == expected, "fctiwz(0x{:016x}):\n"
+                                "     got 0x{:016x}\n"
+                                "expected 0x{:016x}",
             input, result, expected);
   }
   END_TEST();
