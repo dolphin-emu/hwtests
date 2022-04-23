@@ -9,13 +9,13 @@
 #include "gxtest/XFMemory.h"
 
 template <typename T>
-static T CGXDefault();
+static T CGXDefault() = delete;
 
 template <typename T>
-static T CGXDefault(int);
+static T CGXDefault(int) = delete;
 
 template <typename T>
-static T CGXDefault(int, bool);
+static T CGXDefault(int, bool) = delete;
 
 template <>
 GenMode CGXDefault<GenMode>()
