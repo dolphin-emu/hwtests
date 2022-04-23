@@ -394,7 +394,7 @@ Vec4<int> GetTevOutput(const GenMode& genmode, const TevStageCombiner::ColorComb
   // Uses three additional TEV stages which shift the previous result
   // three bits to the right. This is necessary to read off the 5 upper bits,
   // 3 of which got masked off when writing to the EFB in the first pass.
-  gm = genmode;
+  gm.hex = genmode.hex;
   gm.numtevstages = previous_stage + 3;  // three additional stages
   CGX_LOAD_BP_REG(gm.hex);
 
