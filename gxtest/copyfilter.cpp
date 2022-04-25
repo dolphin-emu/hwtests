@@ -180,18 +180,29 @@ static void FillEFB(PixelFormat pixel_fmt)
     CGX_SetViewport(0.0f, 0.0f, 256.0f, 8.0f, 0.0f, 1.0f);
 
     // Set the vertex format...
-    CGX_LOAD_CP_REG(0x50, VTXATTR_DIRECT << 9);  // VCD_LO: direct position only
-    CGX_LOAD_CP_REG(0x60, VTXATTR_DIRECT << 0);  // VCD_HI: direct texcoord0 only
-    UVAT_group0 vat0{.Hex = 0};
+    TVtxDesc vtxdesc;
+    vtxdesc.low.Hex = 0;
+    vtxdesc.high.Hex = 0;
+    vtxdesc.low.Position = VertexComponentFormat::Direct;
+    vtxdesc.high.Tex0Coord = VertexComponentFormat::Direct;
+
+    CGX_LOAD_CP_REG(VCD_LO, vtxdesc.low.Hex);
+    CGX_LOAD_CP_REG(VCD_HI, vtxdesc.high.Hex);
+
+    VAT vtxattr;
+    vtxattr.g0.Hex = 0;
+    vtxattr.g1.Hex = 0;
+    vtxattr.g2.Hex = 0;
     // NOTE: Using XY results in things not working for some reason.
     // We need to supply a Z-value, even if it's not relevant for the final result.
-    vat0.PosElements = VA_TYPE_POS_XYZ;
-    vat0.PosFormat = VA_FMT_S8;
-    vat0.Tex0CoordElements = VA_TYPE_TEX_ST;
-    vat0.Tex0CoordFormat = VA_FMT_U8;
-    CGX_LOAD_CP_REG(0x70, vat0.Hex);
-    CGX_LOAD_CP_REG(0x80, 0x80000000);  // CP_VAT_REG_B: vcache enhance only
-    CGX_LOAD_CP_REG(0x90, 0);  // CP_VAT_REG_C
+    vtxattr.g0.PosElements = CoordComponentCount::XYZ;
+    vtxattr.g0.PosFormat = ComponentFormat::Byte;
+    vtxattr.g0.Tex0CoordElements = TexComponentCount::ST;
+    vtxattr.g0.Tex0CoordFormat = ComponentFormat::UByte;
+    vtxattr.g1.VCacheEnhance = true;
+    CGX_LOAD_CP_REG(CP_VAT_REG_A, vtxattr.g0.Hex);
+    CGX_LOAD_CP_REG(CP_VAT_REG_B, vtxattr.g1.Hex);
+    CGX_LOAD_CP_REG(CP_VAT_REG_C, vtxattr.g2.Hex);
 
     // Actually draw the vertices
     GX_Begin(GX_QUADS, GX_VTXFMT0, 4);

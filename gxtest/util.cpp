@@ -248,32 +248,32 @@ void Quad::Draw()
   vtxattr.g1.Hex = 0;
   vtxattr.g2.Hex = 0;
 
-  vtxattr.g0.PosElements = VA_TYPE_POS_XYZ;
-  vtxattr.g0.PosFormat = VA_FMT_F32;
+  vtxattr.g0.PosElements = CoordComponentCount::XYZ;
+  vtxattr.g0.PosFormat = ComponentFormat::Float;
 
   if (has_color)
   {
-    vtxattr.g0.Color0Elements = VA_TYPE_CLR_RGBA;
-    vtxattr.g0.Color0Comp = VA_FMT_RGBA8;
+    vtxattr.g0.Color0Elements = ColorComponentCount::RGBA;
+    vtxattr.g0.Color0Comp = ColorFormat::RGBA8888;
   }
 
   // TODO: Figure out what this does and why it needs to be 1 for Dolphin not to error out
-  vtxattr.g0.ByteDequant = 1;
+  vtxattr.g0.ByteDequant = true;
 
   TVtxDesc vtxdesc;
-  vtxdesc.Hex = 0;
-  vtxdesc.Position = VTXATTR_DIRECT;
+  vtxdesc.low.Hex = 0;
+  vtxdesc.high.Hex = 0;
+  vtxdesc.low.Position = VertexComponentFormat::Direct;
 
   if (has_color)
-    vtxdesc.Color0 = VTXATTR_DIRECT;
+    vtxdesc.low.Color0 = VertexComponentFormat::Direct;
 
-  // TODO: Not sure if the order of these two is correct
-  CGX_LOAD_CP_REG(0x50, vtxdesc.Hex0);
-  CGX_LOAD_CP_REG(0x60, vtxdesc.Hex1);
+  CGX_LOAD_CP_REG(VCD_LO, vtxdesc.low.Hex);
+  CGX_LOAD_CP_REG(VCD_HI, vtxdesc.high.Hex);
 
-  CGX_LOAD_CP_REG(0x70, vtxattr.g0.Hex);
-  CGX_LOAD_CP_REG(0x80, vtxattr.g1.Hex);
-  CGX_LOAD_CP_REG(0x90, vtxattr.g2.Hex);
+  CGX_LOAD_CP_REG(CP_VAT_REG_A, vtxattr.g0.Hex);
+  CGX_LOAD_CP_REG(CP_VAT_REG_B, vtxattr.g1.Hex);
+  CGX_LOAD_CP_REG(CP_VAT_REG_C, vtxattr.g2.Hex);
 
   /* TODO: Should reset this matrix..
   float mtx[3][4];
