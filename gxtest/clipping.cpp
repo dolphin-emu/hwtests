@@ -19,15 +19,15 @@ void ClipTest()
 
   CGX_LOAD_BP_REG(CGXDefault<TwoTevStageOrders>(0).hex);
 
-  CGX_BEGIN_LOAD_XF_REGS(0x1009, 1);
+  CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETNUMCHAN, 1);
   wgPipe->U32 = 1;  // 1 color channel
 
   LitChannel chan;
   chan.hex = 0;
   chan.matsource = MatSource::Vertex;
-  CGX_BEGIN_LOAD_XF_REGS(0x100e, 1);  // color channel 1
+  CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETCHAN0_COLOR, 1);
   wgPipe->U32 = chan.hex;
-  CGX_BEGIN_LOAD_XF_REGS(0x1010, 1);  // alpha channel 1
+  CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETCHAN0_ALPHA, 1);
   wgPipe->U32 = chan.hex;
 
   CGX_LOAD_BP_REG(CGXDefault<TevStageCombiner::AlphaCombiner>(0).hex);
@@ -79,7 +79,7 @@ void ClipTest()
     CGX_LOAD_BP_REG(tevreg.ra.hex);
     CGX_LOAD_BP_REG(tevreg.bg.hex);
 
-    CGX_BEGIN_LOAD_XF_REGS(0x1005, 1);
+    CGX_BEGIN_LOAD_XF_REGS(XFMEM_CLIPDISABLE, 1);
     wgPipe->U32 = 0;  // 0 = enable clipping, 1 = disable clipping
 
     bool expect_quad_to_be_drawn = true;
@@ -157,7 +157,7 @@ void ClipTest()
     // Depth clipping tests
     case 7:  // Everything behind z=w plane, depth clipping enabled
     case 8:  // Everything behind z=w plane, depth clipping disabled
-      CGX_BEGIN_LOAD_XF_REGS(0x1005, 1);
+      CGX_BEGIN_LOAD_XF_REGS(XFMEM_CLIPDISABLE, 1);
       wgPipe->U32 = step - 7;  // 0 = enable clipping, 1 = disable clipping
 
       test_quad.AtDepth(1.1);
@@ -166,7 +166,7 @@ void ClipTest()
 
     case 9:   // Everything in front of z=0 plane, depth clipping enabled
     case 10:  // Everything in front of z=0 plane, depth clipping disabled
-      CGX_BEGIN_LOAD_XF_REGS(0x1005, 1);
+      CGX_BEGIN_LOAD_XF_REGS(XFMEM_CLIPDISABLE, 1);
       wgPipe->U32 = step - 9;  // 0 = enable clipping, 1 = disable clipping
 
       test_quad.AtDepth(-0.00001);
@@ -181,7 +181,7 @@ void ClipTest()
       // number, which by IEEE would be non-zero but which in fact is
       // treated as zero.
       // In particular, the value by IEEE is -0.00000011920928955078125.
-      CGX_BEGIN_LOAD_XF_REGS(0x1005, 1);
+      CGX_BEGIN_LOAD_XF_REGS(XFMEM_CLIPDISABLE, 1);
       wgPipe->U32 = step - 11;  // 0 = enable clipping, 1 = disable clipping
 
       test_quad.AtDepth(1.0000001);
@@ -189,7 +189,7 @@ void ClipTest()
 
     case 13:  // One vertex behind z=w plane, depth clipping enabled
     case 14:  // One vertex behind z=w plane, depth clipping disabled
-      CGX_BEGIN_LOAD_XF_REGS(0x1005, 1);
+      CGX_BEGIN_LOAD_XF_REGS(XFMEM_CLIPDISABLE, 1);
       wgPipe->U32 = step - 13;  // 0 = enable clipping, 1 = disable clipping
 
       test_quad.VertexTopLeft(-1.0f, 1.0f, 1.5f);
@@ -200,7 +200,7 @@ void ClipTest()
       break;
 
     case 15:  // Three vertices with a very large value for z, depth clipping disabled
-      CGX_BEGIN_LOAD_XF_REGS(0x1005, 1);
+      CGX_BEGIN_LOAD_XF_REGS(XFMEM_CLIPDISABLE, 1);
       wgPipe->U32 = 1;  // 0 = enable clipping, 1 = disable clipping
 
       test_quad.VertexTopLeft(-1.0f, 1.0f, 65537.f);

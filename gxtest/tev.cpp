@@ -41,15 +41,15 @@ void TevCombinerTest()
 
   CGX_LOAD_BP_REG(CGXDefault<TwoTevStageOrders>(0).hex);
 
-  CGX_BEGIN_LOAD_XF_REGS(0x1009, 1);
+  CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETNUMCHAN, 1);
   wgPipe->U32 = 1;  // 1 color channel
 
   LitChannel chan;
   chan.hex = 0;
   chan.matsource = MatSource::Vertex;
-  CGX_BEGIN_LOAD_XF_REGS(0x100e, 1);  // color channel 1
+  CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETCHAN0_COLOR, 1);
   wgPipe->U32 = chan.hex;
-  CGX_BEGIN_LOAD_XF_REGS(0x1010, 1);  // alpha channel 1
+  CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETCHAN0_ALPHA, 1);
   wgPipe->U32 = chan.hex;
 
   auto ac = CGXDefault<TevStageCombiner::AlphaCombiner>(0);
@@ -240,7 +240,7 @@ void KonstTest()
 
   CGX_LOAD_BP_REG(CGXDefault<TwoTevStageOrders>(0).hex);
 
-  CGX_BEGIN_LOAD_XF_REGS(0x1009, 1);
+  CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETNUMCHAN, 1);
   wgPipe->U32 = 1;  // 1 color channel
 
   LitChannel chan;
@@ -248,9 +248,9 @@ void KonstTest()
   chan.matsource = MatSource::MatColorRegister;
   chan.ambsource = AmbSource::AmbColorRegister;
   chan.enablelighting = false;
-  CGX_BEGIN_LOAD_XF_REGS(0x100e, 1);  // color channel 1
+  CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETCHAN0_COLOR, 1);
   wgPipe->U32 = chan.hex;
-  CGX_BEGIN_LOAD_XF_REGS(0x1010, 1);  // alpha channel 1
+  CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETCHAN0_ALPHA, 1);
   wgPipe->U32 = chan.hex;
 
   auto genmode = CGXDefault<GenMode>();
@@ -264,8 +264,8 @@ void KonstTest()
   ctrl.early_ztest = false;
   CGX_LOAD_BP_REG(ctrl.hex);
 
-  CGX_BEGIN_LOAD_XF_REGS(0x1005, 1);
-  wgPipe->U32 = 0;  // 0 = enable clipping, 1 = disable clipping
+  CGX_BEGIN_LOAD_XF_REGS(XFMEM_CLIPDISABLE, 1);
+  wgPipe->U32 = 0;  // enable clipping
 
   // Set up "konst" colors with recognizable values.
   for (int i = 0; i < 4; ++i)
