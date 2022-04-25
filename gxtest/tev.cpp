@@ -46,7 +46,7 @@ void TevCombinerTest()
 
   LitChannel chan;
   chan.hex = 0;
-  chan.matsource = 1;                 // from vertex
+  chan.matsource = MatSource::Vertex;
   CGX_BEGIN_LOAD_XF_REGS(0x100e, 1);  // color channel 1
   wgPipe->U32 = chan.hex;
   CGX_BEGIN_LOAD_XF_REGS(0x1010, 1);  // alpha channel 1
@@ -245,8 +245,8 @@ void KonstTest()
 
   LitChannel chan;
   chan.hex = 0;
-  chan.matsource = 0;  // from register
-  chan.ambsource = 0;  // from register
+  chan.matsource = MatSource::MatColorRegister;
+  chan.ambsource = AmbSource::AmbColorRegister;
   chan.enablelighting = false;
   CGX_BEGIN_LOAD_XF_REGS(0x100e, 1);  // color channel 1
   wgPipe->U32 = chan.hex;
