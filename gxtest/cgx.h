@@ -14,8 +14,15 @@
 #include <ogc/gx.h>
 
 #include "common/CommonTypes.h"
+#include "gxtest/BPMemory.h"
 
 #pragma once
+
+namespace GXTest
+{
+template <typename T>
+union Vec4;
+}  // namespace
 
 /*typedef float f32;
 
@@ -64,9 +71,23 @@ void CGX_LoadPosMatrixDirect(f32 mt[3][4], u32 index);
 void CGX_LoadProjectionMatrixPerspective(float mtx[4][4]);
 void CGX_LoadProjectionMatrixOrthographic(float mtx[4][4]);
 
-void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, u8 dest_format,
-                      bool copy_to_intensity, void* dest, bool scale_down = false,
-                      bool clear = false);
+struct EFBCopyParams
+{
+  EFBCopyFormat format = EFBCopyFormat::RGBA8;
+  bool clamp_top = true;
+  bool clamp_bottom = true;
+  bool unknown_bit = false;
+  GammaCorrection gamma = GammaCorrection::Gamma1_0;
+  bool half_scale = false;
+  bool scale_invert = false;
+  bool clear = false;
+  FrameToField frame_to_field = FrameToField::Progressive;
+  bool copy_to_xfb = false;
+  bool intensity_fmt = false;
+  bool auto_conv = false;
+};
+
+void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, void* dest, const EFBCopyParams& params = {});
 
 // TODO: Add support for other parameters...
 void CGX_DoEfbCopyXfb(u16 left, u16 top, u16 width, u16 src_height, u16 dst_height, void* dest,
@@ -75,3 +96,17 @@ void CGX_DoEfbCopyXfb(u16 left, u16 top, u16 width, u16 src_height, u16 dst_heig
 void CGX_ForcePipelineFlush();
 
 void CGX_WaitForGpuToFinish();
+
+void CGX_PEPokeAlphaMode(CompareMode func, u8 threshold);
+void CGX_PEPokeAlphaUpdate(bool enable);
+void CGX_PEPokeColorUpdate(bool enable);
+void CGX_PEPokeDither(bool dither);
+void CGX_PEPokeBlendMode(u8 type, SrcBlendFactor src_fact, DstBlendFactor dst_fact, LogicOp op);
+void CGX_PEPokeAlphaRead(u8 mode);
+void CGX_PEPokeDstAlpha(bool enable, u8 a);
+void CGX_PEPokeZMode(bool comp_enable, CompareMode func, bool update_enable);
+
+GXTest::Vec4<u8> CGX_PeekARGB(u16 x, u16 y, PixelFormat pixel_fmt);
+u32 CGX_PeekZ(u16 x, u16 y, PixelFormat pixel_fmt);
+void CGX_PokeARGB(u16 x, u16 y, const GXTest::Vec4<u8>& color, PixelFormat pixel_fmt);
+void CGX_PokeZ(u16 x, u16 y, u32 z, PixelFormat pixel_fmt);

@@ -15,6 +15,7 @@
 #include "gxtest/BPMemory.h"
 #include "gxtest/CPMemory.h"
 #include "gxtest/XFMemory.h"
+#include "gxtest/util.h"
 
 #include "cgx.h"
 
@@ -129,8 +130,7 @@ void CGX_LoadProjectionMatrixOrthographic(float mtx[4][4])
   GX_LoadProjectionMtx(mtx, 1);
 }
 
-void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, u8 dest_format,
-                      bool copy_to_intensity, void* dest, bool scale_down, bool clear)
+void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, void* dest, const EFBCopyParams& params)
 {
   assert(left <= 1023);
   assert(top <= 1023);
@@ -157,12 +157,18 @@ void CGX_DoEfbCopyTex(u16 left, u16 top, u16 width, u16 height, u8 dest_format,
 
   UPE_Copy reg;
   reg.Hex = BPMEM_TRIGGER_EFB_COPY << 24;
-  reg.target_pixel_format = ((dest_format << 1) & 0xE) | (dest_format >> 3);
-  reg.half_scale = scale_down;
-  reg.clear = clear;
-  reg.intensity_fmt = copy_to_intensity;
-  reg.clamp_top = true;
-  reg.clamp_bottom = true;
+  reg.SetRealFormat(params.format);
+  reg.clamp_top = params.clamp_top;
+  reg.clamp_bottom = params.clamp_bottom;
+  reg.unknown_bit = params.unknown_bit;
+  reg.gamma = params.gamma;
+  reg.half_scale = params.half_scale;
+  reg.scale_invert = params.scale_invert;
+  reg.clear = params.clear;
+  reg.frame_to_field = params.frame_to_field;
+  reg.copy_to_xfb = params.copy_to_xfb;
+  reg.intensity_fmt = params.intensity_fmt;
+  reg.auto_conv = params.auto_conv;
   CGX_LOAD_BP_REG(reg.Hex);
 
   DCInvalidateRange(dest, GX_GetTexBufferSize(width, height, GX_TF_RGBA8, GX_FALSE, 1));
@@ -236,4 +242,61 @@ void CGX_WaitForGpuToFinish()
     LWP_ThreadSleep(_cgxwaitfinish);
 
   _CPU_ISR_Restore(level);
+}
+
+void CGX_PEPokeAlphaMode(CompareMode func, u8 threshold)
+{
+  GX_PokeAlphaMode(static_cast<u8>(func), threshold);
+}
+void CGX_PEPokeAlphaUpdate(bool enable)
+{
+  GX_PokeAlphaUpdate(enable);
+}
+void CGX_PEPokeColorUpdate(bool enable)
+{
+  GX_PokeColorUpdate(enable);
+}
+void CGX_PEPokeDither(bool dither)
+{
+  GX_PokeDither(dither);
+}
+void CGX_PEPokeBlendMode(u8 type, SrcBlendFactor src_fact, DstBlendFactor dst_fact, LogicOp op)
+{
+  GX_PokeBlendMode(type, static_cast<u8>(src_fact), static_cast<u8>(dst_fact), static_cast<u8>(op));
+}
+void CGX_PEPokeAlphaRead(u8 mode)
+{
+  GX_PokeAlphaRead(mode);
+}
+void CGX_PEPokeDstAlpha(bool enable, u8 a)
+{
+  GX_PokeDstAlpha(enable, a);
+}
+void CGX_PEPokeZMode(bool comp_enable, CompareMode func, bool update_enable)
+{
+  GX_PokeZMode(comp_enable, static_cast<u8>(func), update_enable);
+}
+
+// The pixel_fmt arg is unused currently but exists for future compatibility
+// if we need to do different types of reads for different formats
+GXTest::Vec4<u8> CGX_PeekARGB(u16 x, u16 y, [[maybe_unused]] PixelFormat pixel_fmt)
+{
+  GXColor gx_color;
+  GX_PeekARGB(x, y, &gx_color);
+  return {.r = gx_color.r, .g = gx_color.g, .b = gx_color.b, .a = gx_color.a};
+}
+u32 CGX_PeekZ(u16 x, u16 y, [[maybe_unused]] PixelFormat pixel_fmt)
+{
+  u32 z;
+  GX_PeekZ(x, y, &z);
+  return z;
+}
+void CGX_PokeARGB(u16 x, u16 y, const GXTest::Vec4<u8>& color, [[maybe_unused]] PixelFormat pixel_fmt)
+{
+  GXColor gx_color{.r = color.r, .g = color.g, .b = color.b, .a = color.a};
+  GX_PokeARGB(x, y, gx_color);
+}
+void CGX_PokeZ(u16 x, u16 y, u32 z, [[maybe_unused]] PixelFormat pixel_fmt)
+{
+  GX_PokeZ(x, y, z);
 }
