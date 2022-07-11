@@ -130,10 +130,23 @@ public:
   // Force default constructor to be created
   // so that we can use this within unions
   constexpr BitField() = default;
+  constexpr BitField(const BitField&) = default;
+  constexpr BitField(BitField&&) = default;
 
-  // Warning!  This copies ALL storage bits, not just the bits represented by this bitfield.
-  // This exists so that unions can be copyable.
-  BitField& operator=(const BitField&) = default;
+  // We explicitly delete the copy assignment operator here, because the
+  // default copy assignment would copy the full storage value, rather than
+  // just the bits relevant to this particular bit field.
+  // Ideally, we would just implement the copy assignment to copy only the
+  // relevant bits, but we're prevented from doing that because the savestate
+  // code expects that this class is trivially copyable.
+  BitField& operator=(const BitField&) = delete;
+  // However, to allow assignment of unions returned by CGXDefault, we allow
+  // the use of the move assignment operator. This default implementation
+  // still copies all bits rather than just the bits relevant to this bit field,
+  // but this behavior is desirable when copying unions. Note that although
+  // the right-hand operand is not const (which is required for default to work),
+  // it is not modified.
+  constexpr BitField& operator=(BitField&&) = default;
 
   BitField& operator=(T val)
   {
@@ -229,6 +242,8 @@ public:
   // Force default constructor to be created
   // so that we can use this within unions
   constexpr BitFieldArray() = default;
+  constexpr BitFieldArray(const BitFieldArray&) = default;
+  constexpr BitFieldArray(BitFieldArray&&) = default;
 
   // We explicitly delete the copy assignment operator here, because the
   // default copy assignment would copy the full storage value, rather than
@@ -237,6 +252,13 @@ public:
   // relevant bits, but we're prevented from doing that because the savestate
   // code expects that this class is trivially copyable.
   BitFieldArray& operator=(const BitFieldArray&) = delete;
+  // However, to allow assignment of unions returned by CGXDefault, we allow
+  // the use of the move assignment operator. This default implementation
+  // still copies all bits rather than just the bits relevant to this bit field,
+  // but this behavior is desirable when copying unions. Note that although
+  // the right-hand operand is not const (which is required for default to work),
+  // it is not modified.
+  constexpr BitFieldArray& operator=(BitFieldArray&&) = default;
 
 public:
   constexpr bool IsSigned() const { return std::is_signed<T>(); }
