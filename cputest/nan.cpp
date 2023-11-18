@@ -4,8 +4,8 @@
 #include <gctypes.h>
 #include <wiiuse/wpad.h>
 
-#include "common/BitUtils.h"
-#include "common/hwtests.h"
+#include "Common/BitUtils.h"
+#include "Common/hwtests.h"
 
 static const u64 QUIET_BIT = 0x0008000000000000ULL;
 

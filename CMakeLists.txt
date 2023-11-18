@@ -37,7 +37,7 @@ endfunction()
 include_directories(./)
 
 add_subdirectory(Externals/fmt EXCLUDE_FROM_ALL)
-add_subdirectory(common)
+add_subdirectory(Common)
 add_subdirectory(cputest)
 add_subdirectory(gxtest)
 add_subdirectory(iostest)

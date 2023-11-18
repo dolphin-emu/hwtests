@@ -1,6 +1,6 @@
 #include <gctypes.h>
 #include <wiiuse/wpad.h>
-#include "common/hwtests.h"
+#include "Common/hwtests.h"
 
 // The i parameter uses PowerPC bit ordering (MSB is bit 0)
 static void SetBit(u32* n, size_t i)
