@@ -10,8 +10,8 @@
 #include <ogc/ipc.h>
 #include <ogc/irq.h>
 
-#include "common/CommonTypes.h"
-#include "common/timebase.h"
+#include "Common/CommonTypes.h"
+#include "Common/timebase.h"
 
 namespace ipc {
 

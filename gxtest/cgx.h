@@ -13,7 +13,7 @@
 
 #include <ogc/gx.h>
 
-#include "common/CommonTypes.h"
+#include "Common/CommonTypes.h"
 #include "gxtest/BPMemory.h"
 
 #pragma once

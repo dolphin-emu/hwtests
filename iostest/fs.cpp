@@ -4,7 +4,7 @@
 #include <array>
 #include <cstring>
 
-#include "common/CommonTypes.h"
+#include "Common/CommonTypes.h"
 #include "iostest/fs.h"
 #include "iostest/ipc.h"
 

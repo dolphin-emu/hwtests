@@ -8,8 +8,8 @@
 #include <vector>
 #include <ogc/ios.h>
 
-#include "common/CommonTypes.h"
-#include "common/hwtests.h"
+#include "Common/CommonTypes.h"
+#include "Common/hwtests.h"
 #include "iostest/ipc.h"
 #include "iostest/result_printer.h"
 

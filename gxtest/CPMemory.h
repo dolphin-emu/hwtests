@@ -6,7 +6,7 @@
 #define _CPMEMORY_H
 
 //#include "Common.h"
-#include "common/BitField.h"
+#include "Common/BitField.h"
 
 // Vertex array numbers
 enum

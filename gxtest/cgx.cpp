@@ -11,7 +11,7 @@
 #include <ogc/system.h>
 #include <string.h>
 
-#include "common/CommonTypes.h"
+#include "Common/CommonTypes.h"
 #include "gxtest/BPMemory.h"
 #include "gxtest/CPMemory.h"
 #include "gxtest/XFMemory.h"

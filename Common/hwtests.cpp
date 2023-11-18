@@ -1,4 +1,4 @@
-#include "common/hwtests.h"
+#include "Common/hwtests.h"
 
 struct TestStatus
 {

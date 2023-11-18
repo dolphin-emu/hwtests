@@ -8,7 +8,7 @@
 
 #include <array>
 
-#include "common/CommonTypes.h"
+#include "Common/CommonTypes.h"
 
 namespace ipc {
 

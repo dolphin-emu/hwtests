@@ -1,7 +1,7 @@
 #include <gctypes.h>
 #include <wiiuse/wpad.h>
-#include "common/BitUtils.h"
-#include "common/hwtests.h"
+#include "Common/BitUtils.h"
+#include "Common/hwtests.h"
 
 static const double zero = Common::BitCast<double>(0ULL);
 static const double smallest_denormal = Common::BitCast<double>(1ULL);

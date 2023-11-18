@@ -1,8 +1,8 @@
 #include <gctypes.h>
 #include <limits>
 #include <wiiuse/wpad.h>
-#include "common/BitUtils.h"
-#include "common/hwtests.h"
+#include "Common/BitUtils.h"
+#include "Common/hwtests.h"
 
 template <typename T>
 struct TestInstance

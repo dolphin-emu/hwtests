@@ -12,8 +12,8 @@
 #include <ogc/ios.h>
 #include <unistd.h>
 
-#include "common/CommonTypes.h"
-#include "common/hwtests.h"
+#include "Common/CommonTypes.h"
+#include "Common/hwtests.h"
 #include "iostest/fs.h"
 #include "iostest/ipc.h"
 #include "iostest/result_printer.h"

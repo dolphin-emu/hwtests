@@ -3,8 +3,8 @@
 #include <gctypes.h>
 #include <wiiuse/wpad.h>
 
-#include "common/BitUtils.h"
-#include "common/hwtests.h"
+#include "Common/BitUtils.h"
+#include "Common/hwtests.h"
 
 enum class RoundingMode
 {

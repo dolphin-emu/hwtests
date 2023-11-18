@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <fmt/format.h>
 
-#include "common/FormatUtil.h"
+#include "Common/FormatUtil.h"
 
 #define SERVER_PORT 16784
 

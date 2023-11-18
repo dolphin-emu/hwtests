@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wiiuse/wpad.h>
-#include "common/hwtests.h"
+#include "Common/hwtests.h"
 #include "gxtest/cgx.h"
 #include "gxtest/cgx_defaults.h"
 #include "gxtest/util.h"

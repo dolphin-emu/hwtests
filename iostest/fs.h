@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "common/CommonTypes.h"
+#include "Common/CommonTypes.h"
 #include "iostest/ipc.h"
 
 namespace fs {

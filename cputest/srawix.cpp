@@ -2,7 +2,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <wiiuse/wpad.h>
-#include "common/hwtests.h"
+#include "Common/hwtests.h"
 
 static int GetCarry(int value, int shift)
 {
