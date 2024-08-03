@@ -33,7 +33,7 @@ static void rlwimixTest()
 #define RLWIMIX_TEST(sh, mb, me)                                                                   \
   do                                                                                               \
   {                                                                                                \
-    for (int i = 0; i < (sizeof(values) / sizeof(values[0])); ++i)                                 \
+    for (size_t i = 0; i < (sizeof(values) / sizeof(values[0])); ++i)                                 \
     {                                                                                              \
       u32 mask = GetHelperMask(mb, me);                                                            \
       u32 computed_result = (values[i][0] & ~mask) | (_rotl(values[i][1], sh) & mask);             \
@@ -88,7 +88,7 @@ static void rlwinmxTest()
 #define RLWINMX_TEST(sh, mb, me)                                                                   \
   do                                                                                               \
   {                                                                                                \
-    for (int i = 0; i < (sizeof(values) / sizeof(values[0])); ++i)                                 \
+    for (size_t i = 0; i < (sizeof(values) / sizeof(values[0])); ++i)                                 \
     {                                                                                              \
       u32 mask = GetHelperMask(mb, me);                                                            \
       u32 computed_result = _rotl(values[i], sh) & mask;                                           \
@@ -144,7 +144,7 @@ static void rlwnmxTest()
   do                                                                                               \
   {                                                                                                \
     for (int sh = 0; sh < 32; ++sh)                                                                \
-      for (int i = 0; i < (sizeof(values) / sizeof(values[0])); ++i)                               \
+      for (size_t i = 0; i < (sizeof(values) / sizeof(values[0])); ++i)                               \
       {                                                                                            \
         u32 mask = GetHelperMask(mb, me);                                                          \
         u32 computed_result = _rotl(values[i], sh & 0x1F) & mask;                                  \
