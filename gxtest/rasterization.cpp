@@ -19,15 +19,15 @@ void CoordinatePrecisionTest()
 
   CGX_LOAD_BP_REG(CGXDefault<TwoTevStageOrders>(0).hex);
 
-  CGX_BEGIN_LOAD_XF_REGS(0x1009, 1);
+  CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETNUMCHAN, 1);
   wgPipe->U32 = 1;  // 1 color channel
 
   LitChannel chan;
   chan.hex = 0;
-  chan.matsource = 1;                 // from vertex
-  CGX_BEGIN_LOAD_XF_REGS(0x100e, 1);  // color channel 1
+  chan.matsource = MatSource::Vertex;
+  CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETCHAN0_COLOR, 1);
   wgPipe->U32 = chan.hex;
-  CGX_BEGIN_LOAD_XF_REGS(0x1010, 1);  // alpha channel 1
+  CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETCHAN0_ALPHA, 1);
   wgPipe->U32 = chan.hex;
 
   auto ac = CGXDefault<TevStageCombiner::AlphaCombiner>(0);
@@ -99,7 +99,7 @@ void CoordinatePrecisionTest()
     // For this size, values of xpos from 0.583297729492 to 0.583328247070 will yield a covered
     // pixel
     float vp_width = 2.0e-5f;
-    CGX_BEGIN_LOAD_XF_REGS(0x101a, 6);
+    CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETVIEWPORT, 6);
     wgPipe->F32 = vp_width;
     wgPipe->F32 = -50.0f;
     wgPipe->F32 = 16777215.0f;
