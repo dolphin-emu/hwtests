@@ -4,7 +4,7 @@
 #include <wiiuse/wpad.h>
 
 #include "Common/BitUtils.h"
-#include "Common/CommonFloat.h"
+#include "Common/FloatUtils.h"
 #include "Common/hwtests.h"
 
 // Algorithm adapted from Appendix C.4.2 in PowerPC Microprocessor Family:
