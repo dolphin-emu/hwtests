@@ -192,7 +192,7 @@ double frsqrte_expected(double val)
 }
 
 
-double fres_expected(double val)
+double fres_expected(double val, bool ni)
 {
   static const s32 estimate_base[] = {
       0xfff000, 0xf07000, 0xe1d400, 0xd41000, 0xc71000, 0xbac400, 0xaf2000, 0xa41000,
@@ -212,13 +212,12 @@ double fres_expected(double val)
     u32 vali;
   };
   u64 full_bits = Common::BitCast<u64>(val);
-  valf = RoundToFloatWithMode(val, RoundingMode::TowardsZero);
-  u32 mantissa = vali & FLOAT_FRAC;
-  u32 sign = vali & FLOAT_SIGN;
-  s32 exponent = static_cast<s32>(vali & FLOAT_EXP);
+  u32 mantissa = static_cast<u32>((full_bits & DOUBLE_FRAC) >> (DOUBLE_FRAC_WIDTH - FLOAT_FRAC_WIDTH));
+  u32 sign = static_cast<u32>(full_bits >> 32) & FLOAT_SIGN;
+  s32 exponent = static_cast<s32>(((full_bits & DOUBLE_EXP) >> DOUBLE_FRAC_WIDTH) - 0x380);
 
   // Special case 0
-  if (exponent == 0 && mantissa < 0x200000)
+  if ((full_bits & DOUBLE_EXP) <= 0x37e0000000000000)
   {
     if ((full_bits & ~DOUBLE_SIGN) == 0)
     {
@@ -231,28 +230,19 @@ double fres_expected(double val)
     }
   }
 
-  // Special case NaN-ish numbers
-  if ((full_bits & DOUBLE_EXP) >= 0x47f0000000000000ULL)
+
+  u64 max_float = ni ? 0x47d0000000000000ULL : 0x4940000000000000ULL;
+
+  // Special case huge and NaN-ish numbers
+  if ((full_bits & DOUBLE_EXP) >= max_float)
   {
-    // If it's not NaN, it's infinite!
-    if (valf == valf)
+    // If it's not NaN, it's infinite! (Or just so big it gets cast down to 0)
+    if (val == val)
       return sign ? -0.0 : 0.0;
     return 0.0 + val;
   }
 
-  // Number is denormal, shift the mantissa and adjust the exponent
-  if (exponent == 0)
-  {
-    mantissa <<= 1;
-    while ((mantissa & FLOAT_EXP) == 0) {
-      mantissa <<= 1;
-      exponent -= static_cast<s32>(1 << FLOAT_FRAC_WIDTH);
-    }
-
-    mantissa &= FLOAT_FRAC;
-  }
-
-  exponent = (253 << FLOAT_FRAC_WIDTH) - exponent;
+  exponent = 253 - exponent;
 
   u32 key = mantissa >> 18;
   u32 new_mantissa = static_cast<u32>(estimate_base[key] + estimate_dec[key] * static_cast<s32>((mantissa >> 8) & 0x3ff)) >> 1;
@@ -260,13 +250,21 @@ double fres_expected(double val)
   if (exponent <= 0)
   {
     // Result is subnormal, format it properly!
-    u32 shift = 1 + (static_cast<u32>(-exponent) >> FLOAT_FRAC_WIDTH);
-    vali = sign | (((1 << FLOAT_FRAC_WIDTH) | new_mantissa) >> shift);
+    if (ni)
+    {
+      // Flush to 0 for inexact denormals
+      vali = sign;
+    }
+    else
+    {
+      u32 shift = 1 + static_cast<u32>(-exponent);
+      vali = sign | (((1 << FLOAT_FRAC_WIDTH) | new_mantissa) >> shift);
+    }
   }
   else
   {
     // Result is normal, just string things together
-    vali = sign | static_cast<u32>(exponent) | new_mantissa;
+    vali = sign | static_cast<u32>(exponent << FLOAT_FRAC_WIDTH) | new_mantissa;
   }
   return static_cast<double>(valf);
 }

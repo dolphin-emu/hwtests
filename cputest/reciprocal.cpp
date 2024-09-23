@@ -48,7 +48,7 @@ static void ReciprocalTest()
       break;
 
     testi = i << 32;
-    expectedf = fres_expected(testf);
+    expectedf = fres_expected(testf, true);
     testf = fres_intrinsic(testf);
     DO_TEST(testi == expectedi, "Bad fres {} {} {} {} {}", i, testf, testi, expectedf,
             expectedi);
