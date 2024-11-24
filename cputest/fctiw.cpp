@@ -90,7 +90,7 @@ static void FctiwTestIndividual(u32 i, RoundingMode rounding_mode)
   u64 result = 0;
   asm("fctiw %0, %1" : "=f"(result) : "f"(input));
 
-  DO_TEST(result == expected, "fctiwz 0x{:08x} ({}):\n"
+  DO_TEST(result == expected, "fctiw 0x{:08x} ({}):\n"
                               "     got 0x%{:16x} ({})\n"
                               "expected 0x%{:16x} ({})",
           i, input, result, static_cast<s32>(result), expected, static_cast<s32>(expected));
