@@ -4,32 +4,8 @@
 #include <wiiuse/wpad.h>
 
 #include "Common/BitUtils.h"
+#include "Common/FloatUtils.h"
 #include "Common/hwtests.h"
-
-enum class RoundingMode
-{
-  Nearest = 0b00,
-  TowardsZero = 0b01,
-  TowardsPositiveInfinity = 0b10,
-  TowardsNegativeInfinity = 0b11,
-};
-
-enum : u64
-{
-  DOUBLE_SIGN = 0x8000000000000000ULL,
-  DOUBLE_EXP = 0x7FF0000000000000ULL,
-  DOUBLE_FRAC = 0x000FFFFFFFFFFFFFULL,
-  DOUBLE_ZERO = 0x0000000000000000ULL,
-  DOUBLE_QBIT = 0x0008000000000000ULL,
-};
-
-enum : u32
-{
-  FLOAT_SIGN = 0x80000000,
-  FLOAT_EXP = 0x7F800000,
-  FLOAT_FRAC = 0x007FFFFF,
-  FLOAT_ZERO = 0x00000000,
-};
 
 // Algorithm adapted from Appendix C.4.2 in PowerPC Microprocessor Family:
 // The Programming Environments Manual for 32 and 64-bit Microprocessors
