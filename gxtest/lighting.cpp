@@ -19,17 +19,17 @@ void LightingTest()
 
   CGX_LOAD_BP_REG(CGXDefault<TwoTevStageOrders>(0).hex);
 
-  CGX_BEGIN_LOAD_XF_REGS(0x1009, 1);
+  CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETNUMCHAN, 1);
   wgPipe->U32 = 1;  // 1 color channel
 
   LitChannel chan;
   chan.hex = 0;
-  chan.matsource = 0;  // from register
-  chan.ambsource = 0;  // from register
+  chan.matsource = MatSource::MatColorRegister;
+  chan.ambsource = AmbSource::AmbColorRegister;
   chan.enablelighting = true;
-  CGX_BEGIN_LOAD_XF_REGS(0x100e, 1);  // color channel 1
+  CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETCHAN0_COLOR, 1);
   wgPipe->U32 = chan.hex;
-  CGX_BEGIN_LOAD_XF_REGS(0x1010, 1);  // alpha channel 1
+  CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETCHAN0_ALPHA, 1);
   wgPipe->U32 = chan.hex;
 
   CGX_LOAD_BP_REG(CGXDefault<TevStageCombiner::AlphaCombiner>(0).hex);
@@ -62,13 +62,13 @@ void LightingTest()
     CGX_LOAD_BP_REG(tevreg.ra.hex);
     CGX_LOAD_BP_REG(tevreg.bg.hex);
 
-    CGX_BEGIN_LOAD_XF_REGS(0x1005, 1);
-    wgPipe->U32 = 0;  // 0 = enable clipping, 1 = disable clipping
+    CGX_BEGIN_LOAD_XF_REGS(XFMEM_CLIPDISABLE, 1);
+    wgPipe->U32 = 0;  // enable clipping
 
-    CGX_BEGIN_LOAD_XF_REGS(0x100a, 1);
+    CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETCHAN0_AMBCOLOR, 1);
     wgPipe->U32 = (ambcolor << 24) | 255;
 
-    CGX_BEGIN_LOAD_XF_REGS(0x100c, 1);
+    CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETCHAN0_MATCOLOR, 1);
     wgPipe->U32 = (matcolor << 24) | 255;
 
     int test_x = 125, test_y = 25;  // Somewhere within the viewport

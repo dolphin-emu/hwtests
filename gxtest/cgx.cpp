@@ -85,7 +85,7 @@ void CGX_Init()
 
 void CGX_SetViewport(float origin_x, float origin_y, float width, float height, float near, f32 far)
 {
-  CGX_BEGIN_LOAD_XF_REGS(0x101a, 6);
+  CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETVIEWPORT, 6);
   wgPipe->F32 = width * 0.5f;
   wgPipe->F32 = -height * 0.5f;
   wgPipe->F32 = (far - near) * 16777215.0f;
@@ -105,7 +105,7 @@ void CGX_LoadPosMatrixDirect(f32 mt[3][4], u32 index)
 void CGX_LoadProjectionMatrixPerspective(float mtx[4][4])
 {
   // Untested
-  /*	CGX_BEGIN_LOAD_XF_REGS(0x1020, 7);
+  /*	CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETPROJECTION, 7);
     wgPipe->F32 = mtx[0][0];
     wgPipe->F32 = mtx[0][2];
     wgPipe->F32 = mtx[1][1];
@@ -119,7 +119,7 @@ void CGX_LoadProjectionMatrixPerspective(float mtx[4][4])
 void CGX_LoadProjectionMatrixOrthographic(float mtx[4][4])
 {
   // Untested
-  /*	CGX_BEGIN_LOAD_XF_REGS(0x1020, 7);
+  /*	CGX_BEGIN_LOAD_XF_REGS(XFMEM_SETPROJECTION, 7);
     wgPipe->F32 = mtx[0][0];
     wgPipe->F32 = mtx[0][3];
     wgPipe->F32 = mtx[1][1];
